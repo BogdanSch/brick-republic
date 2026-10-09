@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import type { BaseAddress } from "../types/index.ts";
+import { BaseAddressSchema } from "./schemas/baseAddressSchema.js";
 
 type OpeningHoursDay = {
   open?: string;
@@ -25,22 +26,18 @@ type Store = {
   };
 };
 
-const AddressSchema = new Schema({
-  street: { type: String, required: true },
-  city: { type: String, required: true },
-  postalCode: { type: String, required: true },
-  country: { type: String, required: true },
-});
-
-const OpeningHoursDaySchema = new Schema({
-  open: { type: String, required: false, default: null },
-  close: { type: String, required: false, default: null },
-  isClosed: { type: Boolean, required: true, default: false },
-});
+const OpeningHoursDaySchema = new Schema(
+  {
+    open: { type: String, required: false, default: null },
+    close: { type: String, required: false, default: null },
+    isClosed: { type: Boolean, required: true, default: false },
+  },
+  { _id: false },
+);
 
 const StoreSchema = new Schema<Store>({
   name: { type: String, required: true, minLength: 3 },
-  address: { type: AddressSchema, required: true },
+  address: { type: BaseAddressSchema, required: true },
   location: {
     type: { type: String, enum: ["Point"], required: true },
     coordinates: { type: [Number], required: true },
@@ -58,5 +55,6 @@ const StoreSchema = new Schema<Store>({
     required: true,
   },
 });
+StoreSchema.index({ location: "2dsphere" });
 
 export default mongoose.model<Store>("Store", StoreSchema);

@@ -14,10 +14,13 @@ export function getSlug(name: string): string {
   return name.toLowerCase().split(/[\s]/).join("-");
 }
 
-const VisualsSchema = new Schema({
-  heroBanner: { type: String, required: false, default: null },
-  icon: { type: String, required: true },
-});
+const VisualsSchema = new Schema(
+  {
+    heroBanner: { type: String, required: false, default: null },
+    icon: { type: String, required: true },
+  },
+  { _id: false },
+);
 
 const ThemeSchema = new Schema<Theme>({
   name: { type: String, required: true, minLength: 3, maxLength: 260 },

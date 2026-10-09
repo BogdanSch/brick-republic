@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 
-
 type Minifigure = {
   name: string;
   theme: {
@@ -20,20 +19,29 @@ type Minifigure = {
   tags?: string[];
 };
 
-const PricingSchema = new Schema({
-  retailPrice: { type: mongoose.Types.Decimal128, required: true, min: 0 },
-});
+const PricingSchema = new Schema(
+  {
+    retailPrice: { type: mongoose.Types.Decimal128, required: true, min: 0 },
+  },
+  { _id: false },
+);
 
-const StockSchema = new Schema({
-  newCondition: { type: Number, required: false, default: 0, min: 0 },
-  usedCondition: { type: Number, required: false, default: 0, min: 0 },
-});
+const StockSchema = new Schema(
+  {
+    newCondition: { type: Number, required: false, default: 0, min: 0 },
+    usedCondition: { type: Number, required: false, default: 0, min: 0 },
+  },
+  { _id: false },
+);
 
-const ThemeReferenceSchema = new Schema({
-  themeId: { type: Schema.Types.ObjectId, ref: "Theme", required: true },
-  slug: { type: String, required: true },
-  name: { type: String, required: true },
-});
+const ThemeReferenceSchema = new Schema(
+  {
+    themeId: { type: Schema.Types.ObjectId, ref: "Theme", required: true },
+    slug: { type: String, required: true },
+    name: { type: String, required: true },
+  },
+  { _id: false },
+);
 
 const MinifigureSchema = new Schema<Minifigure>({
   name: { type: String, required: true, minLength: 3 },

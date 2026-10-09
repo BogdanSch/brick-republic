@@ -4,7 +4,9 @@
     // File Layout
     "rootDir": "./src",
     "outDir": "./dist",
-
+    "paths": {
+      "@models/*": ["./src/models/*"]
+    },
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
