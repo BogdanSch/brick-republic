@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import type { ThemeDto } from "../types/dtos.js";
 
 export type Theme = {
   name: string;
@@ -8,6 +9,7 @@ export type Theme = {
     heroBanner?: string;
     icon: string;
   };
+  toDto: () => ThemeDto;
 };
 
 export function getSlug(name: string): string {
@@ -32,5 +34,18 @@ const ThemeSchema = new Schema<Theme>({
   description: { type: String, required: true, minLength: 10 },
   visuals: { type: VisualsSchema, required: true },
 });
+
+ThemeSchema.methods.toDto = function (): ThemeDto {
+  return {
+    id: this._id.toString(),
+    name: this.name,
+    slug: this.slug,
+    description: this.description,
+    visuals: {
+      heroBanner: this.visuals.heroBanner || null,
+      icon: this.visuals.icon,
+    },
+  };
+};
 
 export default mongoose.model<Theme>("Theme", ThemeSchema);

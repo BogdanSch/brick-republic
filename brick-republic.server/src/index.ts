@@ -2,9 +2,11 @@ import express from "express";
 import type { Application, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import minifiguresRouter from "./features/minifigures.js";
+import { authenticateToken } from "./utils/authenticateToken.js";
 import mongoose from "mongoose";
 import User from "./models/user.js";
-import type { LoginUserDto, RegisterUserDto } from "./dtos/index.js";
+import type { LoginUserDto, RegisterUserDto } from "./types/dtos.js";
 
 dotenv.config();
 const app: Application = express();
@@ -16,25 +18,6 @@ app.use(express.json());
 mongoose.connect(process.env.MONGO_URI!).then(() => {
   console.log("Connected to MongoDB");
 });
-
-function authenticateToken(req: Request, res: Response, next: Function) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      message: "Authentication token required",
-    });
-  }
-
-  const token: string = authHeader.split(" ")[1]!;
-  try {
-    jwt.verify(token, process.env.JWT_SECRET_KEY!);
-    next();
-  } catch {
-    return res.status(401).json({
-      message: "Invalid or expired token",
-    });
-  }
-}
 
 app.post("/signup", async (req, res) => {
   const dto: RegisterUserDto = req.body;
@@ -68,8 +51,6 @@ app.post("/signup", async (req, res) => {
     message: "User registered successfully",
   });
 });
-
-// Login
 app.post("/login", async (req, res) => {
   const dto: LoginUserDto = req.body;
   const user = await User.findOne({ email: dto.email });
@@ -88,12 +69,27 @@ app.post("/login", async (req, res) => {
   );
   res.json({ token });
 });
+app.get("/users/me", authenticateToken, async (req, res) => {
+  try {
+    const token: string = req.headers.authorization?.split(" ")[1]!;
+    const decodedToken = jwt.decode(token) as { userId: string; email: string };
 
-app.get("/profile", authenticateToken, (req, res) => {
-  res.json({
-    message: "Protected resource accessed successfully",
-  });
+    const user = await User.findOne({ _id: decodedToken.userId });
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    res.json(user.toDto());
+  } catch (error) {
+    return res.status(401).json({
+      message: "Invalid or expired token",
+    });
+  }
 });
+
+app.get("/minifigures", minifiguresRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

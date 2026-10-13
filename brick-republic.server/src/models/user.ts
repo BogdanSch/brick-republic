@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import type { AdminPermission } from "../admin/permissions.js";
 import type { BaseAddress } from "../types/index.js";
+import type { UserDto } from "../types/dtos.js";
 
 export type UserRole = "customer" | "admin";
 
@@ -24,10 +25,11 @@ type User = {
       isDefault: boolean;
     } & BaseAddress,
   ];
-  wishlist?: [Schema.Types.ObjectId, Schema.Types.ObjectId];
+  wishlist?: [Schema.Types.ObjectId];
   lastLogin?: Date;
   createdAt: Date;
   comparePassword: (candidatePassword: string) => Promise<boolean>;
+  toDto: () => UserDto;
 };
 
 const SALT_WORK_FACTOR: number = 10;
@@ -104,14 +106,24 @@ UserSchema.pre("save", function (next: any) {
   });
 });
 
-UserSchema.methods.comparePassword = function (
+UserSchema.methods.comparePassword = async function (
   candidatePassword: string,
-  cb: any,
 ) {
-  bcrypt.compare(candidatePassword, this.password, function (err, isMatch) {
-    if (err) return cb(err);
-    cb(null, isMatch);
-  });
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+UserSchema.methods.toDto = function () {
+  return {
+    email: this.email,
+    role: this.role,
+    profile: this.profile,
+    permissions: this.permissions,
+    adminProfile: this.adminProfile,
+    addresses: this.addresses,
+    wishlist: this.wishlist,
+    lastLogin: this.lastLogin,
+    createdAt: this.createdAt,
+  };
 };
 
 export default mongoose.model<User>("User", UserSchema);

@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import type { BaseAddress } from "../types/index.ts";
 import { BaseAddressSchema } from "./schemas/baseAddressSchema.js";
+import type { BaseAddress, StoreDto } from "../types/index.ts";
 
 type OpeningHoursDay = {
   open?: string;
@@ -24,6 +24,7 @@ type Store = {
     saturday: OpeningHoursDay;
     sunday: OpeningHoursDay;
   };
+  toDto: () => StoreDto;
 };
 
 const OpeningHoursDaySchema = new Schema(
@@ -56,5 +57,18 @@ const StoreSchema = new Schema<Store>({
   },
 });
 StoreSchema.index({ location: "2dsphere" });
+
+StoreSchema.methods.toDto = function (): StoreDto {
+  return {
+    id: this._id.toString(),
+    name: this.name,
+    address: this.address,
+    location: {
+      type: this.location.type,
+      coordinates: this.location.coordinates,
+    },
+    openingHours: this.openingHours,
+  };
+};
 
 export default mongoose.model<Store>("Store", StoreSchema);

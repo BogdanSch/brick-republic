@@ -1,8 +1,8 @@
 import mongoose, { Schema } from "mongoose";
-import type { BaseAddress } from "../types/index.ts";
 import { BaseAddressSchema } from "./schemas/baseAddressSchema.js";
+import type { BaseAddress, OrderDto } from "../types/index.ts";
 
-type OrderStatus =
+export type OrderStatus =
   | "pending"
   | "processing"
   | "shipped"
@@ -14,7 +14,7 @@ type MinifigureOrder = {
   name: string;
   condition: string;
   quantity: number;
-  priceAtPurchase: mongoose.Types.Decimal128;
+  priceAtPurchase: Schema.Types.Decimal128;
 };
 
 type OrderFulfillmentMethod = "delivery" | "pickup";
@@ -50,6 +50,7 @@ type Order = {
   shipment?: Shipment;
   pickup?: Pickup;
   financials: Financials;
+  toDto: () => OrderDto;
 };
 
 const MinifigureOrderSchema = new Schema<MinifigureOrder>(
@@ -120,6 +121,7 @@ const OrderSchema = new Schema<Order>({
       "cancelled",
     ] as OrderStatus[],
     default: "pending",
+    required: true,
   },
   fulfillmentMethod: {
     type: String,
@@ -131,5 +133,45 @@ const OrderSchema = new Schema<Order>({
   pickup: { type: PickupSchema },
   financials: { type: FinancialsSchema, required: true },
 });
+
+OrderSchema.methods.toDto = function (): OrderDto {
+  const shipment = this.shipment
+    ? {
+        ...this.shipment,
+        shippingCost: parseFloat(this.shipment.shippingCost.toString()),
+      }
+    : undefined;
+
+  const pickup = this.pickup
+    ? {
+        storeId: this.pickup.storeId.toString(),
+        name: this.pickup.name,
+        storeAddress: this.pickup.storeAddress,
+        expectedPickupDate: this.pickup.expectedPickupDate,
+      }
+    : undefined;
+
+  return {
+    id: this._id.toString(),
+    customerId: this.customerId.toString(),
+    orderDate: this.orderDate,
+    status: this.status,
+    fulfillmentMethod: this.fulfillmentMethod,
+    items: this.items.map((item: any) => ({
+      minifigureId: item.minifigureId.toString(),
+      name: item.name,
+      condition: item.condition,
+      quantity: item.quantity,
+      priceAtPurchase: parseFloat(item.priceAtPurchase.toString()),
+    })),
+    ...(shipment ? { shipment } : {}),
+    ...(pickup ? { pickup } : {}),
+    financials: {
+      itemsTotal: parseFloat(this.financials.itemsTotal.toString()),
+      shippingTotal: parseFloat(this.financials.shippingTotal.toString()),
+      finalTotal: parseFloat(this.financials.finalTotal.toString()),
+    },
+  };
+};
 
 export default mongoose.model<Order>("Order", OrderSchema);

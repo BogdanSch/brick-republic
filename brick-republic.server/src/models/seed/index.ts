@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import User from "@models/user.js";
 import Theme from "@models/theme.js";
 import Minifigure from "@models/minifigure.js";
+import Store from "@models/store.js";
 dotenv.config();
 
 async function seedDatabase() {
@@ -15,6 +16,7 @@ async function seedDatabase() {
       User.deleteMany({}),
       Theme.deleteMany({}),
       Minifigure.deleteMany({}),
+      Store.deleteMany({}),
     ]);
 
     console.log("Seeding Admin User...");
@@ -88,6 +90,33 @@ async function seedDatabase() {
     ];
 
     await Minifigure.insertMany(minifigures);
+
+    console.log("Seeding Store Location...");
+    const amsterdamStore = new Store({
+      name: "MinifigStore Amsterdam Centrum",
+      address: {
+        label: "Main Storefront",
+        street: "Kalverstraat 10",
+        city: "Amsterdam",
+        postalCode: "1012 NX",
+        country: "Netherlands",
+        isDefault: true,
+      },
+      location: {
+        type: "Point",
+        coordinates: [4.8922, 52.3702],
+      },
+      openingHours: {
+        monday: { open: "12:00", close: "18:00", isClosed: false },
+        tuesday: { open: "09:00", close: "18:00", isClosed: false },
+        wednesday: { open: "09:00", close: "18:00", isClosed: false },
+        thursday: { open: "09:00", close: "21:00", isClosed: false },
+        friday: { open: "09:00", close: "18:00", isClosed: false },
+        saturday: { open: "10:00", close: "17:00", isClosed: false },
+        sunday: { open: null, close: null, isClosed: true },
+      },
+    });
+    await amsterdamStore.save();
 
     console.log("Database seeded successfully!");
     process.exit(0);

@@ -5,7 +5,8 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "paths": {
-      "@models/*": ["./src/models/*"]
+      "@models/*": ["./src/models/*"],
+      "@utils/*": ["./src/utils/*"]
     },
     // Environment Settings
     // See also https://aka.ms/tsconfig/module

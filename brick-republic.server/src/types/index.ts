@@ -4,3 +4,5 @@ export type BaseAddress = {
   postalCode: string;
   country: string;
 };
+
+export * from "./dtos.js";

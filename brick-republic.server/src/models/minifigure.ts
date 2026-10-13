@@ -1,15 +1,16 @@
 import mongoose, { Schema } from "mongoose";
+import type { MinifigureDto } from "../types/dtos.js";
 
 type Minifigure = {
   name: string;
   theme: {
-    themeId: string;
+    themeId: mongoose.Types.ObjectId;
     slug: string;
     name: string;
   };
   yearReleased: number;
   pricing: {
-    retailPrice: number;
+    retailPrice: mongoose.Types.Decimal128;
   };
   stock: {
     newCondition: number;
@@ -17,6 +18,7 @@ type Minifigure = {
   };
   accessories?: string[];
   tags?: string[];
+  toDto: () => MinifigureDto;
 };
 
 const PricingSchema = new Schema(
@@ -52,5 +54,26 @@ const MinifigureSchema = new Schema<Minifigure>({
   accessories: { type: [String], required: false, default: [] },
   tags: { type: [String], required: false, default: [] },
 });
+
+MinifigureSchema.methods.toDto = function (): MinifigureDto {
+  return {
+    id: this._id.toString(),
+    name: this.name,
+    theme: {
+      slug: this.theme.slug,
+      name: this.theme.name,
+    },
+    yearReleased: this.yearReleased,
+    pricing: {
+      retailPrice: parseFloat(this.pricing.retailPrice.toString()),
+    },
+    stock: {
+      newCondition: this.stock.newCondition,
+      usedCondition: this.stock.usedCondition,
+    },
+    accessories: this.accessories,
+    tags: this.tags,
+  };
+};
 
 export default mongoose.model<Minifigure>("Minifigure", MinifigureSchema);
