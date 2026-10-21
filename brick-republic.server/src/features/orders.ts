@@ -1,11 +1,14 @@
 import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-// Import Store model to fetch authoritative pickup details
+import {
+  authenticateToken,
+  authorizeRoles,
+  type TokenPayload,
+} from "../middleware/auth.js";
 import { Order, Minifigure, Store } from "@models/index.js";
 import type { OrderStatus } from "@models/order.js";
 import type { CreateOrderDto } from "../types/dtos.js";
-import { authenticateToken } from "@utils/authenticateToken.js";
 
 const DELIVERY_TARRIF: number = 4.6;
 const router = express.Router();
@@ -21,7 +24,9 @@ router.get(
         email: string;
       };
 
-      const orders = await Order.find({ customerId: decodedToken.userId }).sort({
+      const orders = await Order.find({
+        customerId: new mongoose.Types.ObjectId(decodedToken.userId),
+      }).sort({
         orderDate: -1,
       });
       res.json({ items: orders.map((o) => o.toDto()) });
@@ -31,34 +36,70 @@ router.get(
   },
 );
 
-router.get("/", authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const queryFilter: Record<string, any> = {};
-    if (req.query.status) {
-      queryFilter.status = req.query.status.toString() as OrderStatus;
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRoles("admin"),
+  async (req: Request, res: Response) => {
+    try {
+      const queryFilter: Record<string, any> = {};
+      if (req.query.status) {
+        queryFilter.status = req.query.status.toString() as OrderStatus;
+      }
+
+      const orders = await Order.aggregate([
+        {
+          $match: queryFilter,
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "customerId",
+            foreignField: "_id",
+            as: "customerInfo",
+          },
+        },
+        {
+          $unwind: "$customerInfo",
+        },
+        {
+          $addFields: {
+            customerEmail: "$customerInfo.email",
+            customerProfile: "$customerInfo.profile",
+          },
+        },
+        {
+          $sort: {
+            orderDate: -1,
+          },
+        },
+      ]);
+
+      res.json({
+        orders: orders.map((o) => {
+          const dto = o.toDto();
+          dto.customerEmail = o.customerEmail;
+          dto.customerProfile = o.customerProfile;
+          return dto;
+        }),
+      });
+    } catch (e) {
+      res.status(500).json({ message: "Error fetching all orders" });
     }
-
-    const orders = await Order.find(queryFilter)
-      .populate("customerId", "email profile")
-      .sort({ orderDate: -1 });
-
-    res.json({ orders: orders.map((o) => o.toDto()) });
-  } catch (e) {
-    res.status(500).json({ message: "Error fetching all orders" });
-  }
-});
+  },
+);
 
 router.post("/", authenticateToken, async (req: Request, res: Response) => {
   try {
     const dto = req.body as CreateOrderDto;
     const token = req.headers.authorization?.split(" ")[1]!;
-    const decodedToken = jwt.decode(token) as { userId: string };
+    const decodedToken = jwt.decode(token) as TokenPayload;
 
-    let itemsTotal = 0;
+    let itemsTotal: number = 0;
     for (const item of dto.items) {
       itemsTotal += item.priceAtPurchase * item.quantity;
 
-      const conditionKey =
+      const conditionKey: string =
         item.condition === "new" ? "stock.newCondition" : "stock.usedCondition";
       await Minifigure.findByIdAndUpdate(item.minifigureId, {
         $inc: { [conditionKey]: -item.quantity },
@@ -116,6 +157,7 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
 router.patch(
   "/:id/status",
   authenticateToken,
+  authorizeRoles("admin"),
   async (req: Request, res: Response) => {
     try {
       const { status } = req.body;
@@ -131,9 +173,18 @@ router.patch(
         return res.status(400).json({ message: "Invalid status provided" });
       }
 
-      const order = await Order.findByIdAndUpdate(req.params.id, { status });
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
+      const order = await Order.updateOne(
+        {
+          _id: req.params.id,
+        },
+        {
+          $set: {
+            status: status,
+          },
+        },
+      );
+      if (order.modifiedCount != 1) {
+        return res.status(404).json({ message: "Order not updated" });
       }
 
       res.sendStatus(204);

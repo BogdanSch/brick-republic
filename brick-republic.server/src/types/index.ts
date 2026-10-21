@@ -5,4 +5,10 @@ export type BaseAddress = {
   country: string;
 };
 
+export type UserProfile = {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+};
+
 export * from "./dtos.js";

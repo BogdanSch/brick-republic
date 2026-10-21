@@ -27,12 +27,6 @@ async function seedDatabase() {
       adminProfile: {
         department: "Head Management",
       },
-      permissions: [
-        "manage_orders",
-        "manage_products",
-        "manage_users",
-        "view_reports",
-      ],
     });
     await adminUser.save();
 

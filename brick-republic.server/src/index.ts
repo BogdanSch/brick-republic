@@ -2,9 +2,9 @@ import express from "express";
 import type { Application, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import minifiguresRouter from "./features/minifigures.js";
-import { authenticateToken } from "./utils/authenticateToken.js";
 import mongoose from "mongoose";
+import { authenticateToken, type TokenPayload } from "./middleware/auth.js";
+import minifiguresRouter from "./features/minifigures.js";
 import User from "./models/user.js";
 import type { LoginUserDto, RegisterUserDto } from "./types/dtos.js";
 
@@ -61,7 +61,11 @@ app.post("/login", async (req, res) => {
     });
   }
   const token = jwt.sign(
-    { userId: user.id, email: user.email },
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    } as TokenPayload,
     process.env.JWT_SECRET_KEY!,
     {
       expiresIn: "1d",

@@ -1,21 +1,13 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import type { AdminPermission } from "../admin/permissions.js";
-import type { BaseAddress } from "../types/index.js";
-import type { UserDto } from "../types/dtos.js";
-
-export type UserRole = "customer" | "admin";
+import type { UserRole } from "../admin/roles.js";
+import type { BaseAddress, UserProfile, UserDto } from "../types/index.js";
 
 type User = {
   email: string;
   password: string;
   role: UserRole;
-  profile?: {
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-  };
-  permissions?: AdminPermission[];
+  profile?: UserProfile;
   adminProfile?: {
     department: string;
   };
@@ -25,7 +17,7 @@ type User = {
       isDefault: boolean;
     } & BaseAddress,
   ];
-  wishlist?: [Schema.Types.ObjectId];
+  wishlist?: [mongoose.Types.ObjectId];
   lastLogin?: Date;
   createdAt: Date;
   comparePassword: (candidatePassword: string) => Promise<boolean>;
@@ -68,18 +60,6 @@ const UserSchema = new Schema<User>({
   role: { type: String, enum: ["customer", "admin"], default: "customer" },
   profile: { type: ProfileSchema, required: false },
   adminProfile: { type: AdminProfileSchema, required: false },
-  permissions: [
-    {
-      type: String,
-      enum: [
-        "manage_users",
-        "manage_products",
-        "manage_orders",
-        "view_reports",
-      ] as AdminPermission[],
-      required: false,
-    },
-  ],
   addresses: [AddressSchema],
   wishlist: [
     {
@@ -117,7 +97,6 @@ UserSchema.methods.toDto = function () {
     email: this.email,
     role: this.role,
     profile: this.profile,
-    permissions: this.permissions,
     adminProfile: this.adminProfile,
     addresses: this.addresses,
     wishlist: this.wishlist,

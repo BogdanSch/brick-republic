@@ -1,4 +1,4 @@
-import type { BaseAddress } from "./index.js";
+import type { BaseAddress, UserProfile } from "./index.js";
 
 export type RegisterUserDto = {
   email: string;
@@ -16,12 +16,7 @@ export type LoginUserDto = {
 export type UserDto = {
   email: string;
   role: string;
-  profile?: {
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-  };
-  permissions?: string[];
+  profile?: UserProfile;
   adminProfile?: {
     department: string;
   };
@@ -130,6 +125,8 @@ export type UpdateStoreDto = Omit<StoreDto, "id">;
 export type OrderDto = {
   id: string;
   customerId: string;
+  customerEmail?: string;
+  customerProfile?: UserProfile;
   orderDate: Date;
   status: string;
   fulfillmentMethod: "delivery" | "pickup";

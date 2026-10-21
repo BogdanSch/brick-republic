@@ -10,11 +10,11 @@ export type OrderStatus =
   | "cancelled";
 
 type MinifigureOrder = {
-  minifigureId: Schema.Types.ObjectId;
+  minifigureId: mongoose.Types.ObjectId;
   name: string;
   condition: string;
   quantity: number;
-  priceAtPurchase: Schema.Types.Decimal128;
+  priceAtPurchase: mongoose.Types.Decimal128;
 };
 
 type OrderFulfillmentMethod = "delivery" | "pickup";
@@ -29,7 +29,7 @@ type Shipment = {
 };
 
 type Pickup = {
-  storeId: Schema.Types.ObjectId;
+  storeId: mongoose.Types.ObjectId;
   name: string;
   storeAddress: BaseAddress;
   expectedPickupDate: Date;
@@ -42,7 +42,7 @@ type Financials = {
 };
 
 type Order = {
-  customerId: Schema.Types.ObjectId;
+  customerId: mongoose.Types.ObjectId;
   orderDate: Date;
   status: OrderStatus;
   fulfillmentMethod: OrderFulfillmentMethod;
@@ -133,6 +133,7 @@ const OrderSchema = new Schema<Order>({
   pickup: { type: PickupSchema },
   financials: { type: FinancialsSchema, required: true },
 });
+OrderSchema.index({ orderDate: -1 });
 
 OrderSchema.methods.toDto = function (): OrderDto {
   const shipment = this.shipment
