@@ -1,7 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import type { UserRole } from "../admin/roles.js";
-import type { BaseAddress, UserProfile, UserDto } from "../types/index.js";
+import type {
+  BaseAddress,
+  UserProfile,
+  UserDto,
+  UserRole,
+} from "shared/types/index.js";
 
 type User = {
   email: string;

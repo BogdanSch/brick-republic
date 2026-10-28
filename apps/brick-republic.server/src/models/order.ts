@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { BaseAddressSchema } from "./schemas/baseAddressSchema.js";
-import type { BaseAddress, OrderDto } from "../types/index.ts";
+import type { BaseAddress, OrderDto } from "shared/types/index.ts";
 
 export type OrderStatus =
   | "pending"

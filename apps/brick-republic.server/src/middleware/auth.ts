@@ -1,12 +1,6 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import type { UserRole } from "../admin/roles.js";
-
-export type TokenPayload = {
-  userId: string;
-  email: string;
-  role: UserRole;
-};
+import type { TokenPayload, UserRole } from "shared/types/index.js";
 
 export type AuthenticatedRequest = Request & {
   user?: TokenPayload;

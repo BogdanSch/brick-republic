@@ -2,7 +2,7 @@ import express, { type Request, type Response } from "express";
 import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
 import { Theme, Minifigure } from "../models/index.js";
 import { getSlug } from "../models/theme.js";
-import type { CreateThemeDto, UpdateThemeDto } from "../types/dtos.js";
+import type { CreateThemeDto, UpdateThemeDto } from "shared/types/index.js";
 
 const router = express.Router();
 
@@ -61,22 +61,24 @@ router.put(
   async (req: Request, res: Response) => {
     try {
       const dto = req.body as UpdateThemeDto;
+      const id = req.params.id as string;
 
-      const theme = await Theme.findById(req.params.id);
-      if (!theme) {
-        return res.status(404).json({ message: "Theme not found" });
-      }
-
-      theme.name = dto.name;
-      theme.slug = getSlug(dto.name);
-      theme.description = dto.description;
-      theme.visuals = {
-        icon: dto.visuals.icon,
-      };
-      if (dto.visuals.heroBanner) {
-        theme.visuals.heroBanner = dto.visuals.heroBanner;
-      }
-      await theme.save();
+      await Theme.findOneAndUpdate(
+        { _id: id },
+        {
+          $set: {
+            name: dto.name,
+            slug: getSlug(dto.name),
+            description: dto.description,
+            visuals: {
+              icon: dto.visuals.icon,
+              ...(dto.visuals.heroBanner
+                ? { heroBanner: dto.visuals.heroBanner }
+                : {}),
+            },
+          },
+        },
+      );
 
       res.sendStatus(204);
     } catch (e) {
@@ -99,7 +101,7 @@ router.delete(
       if (linkedMinifiguresExist) {
         return res.status(409).json({
           message:
-            "Cannot delete theme. There are still minifigures assigned to it. Reassign or delete them first.",
+            "Cannot delete the theme. There are still minifigures assigned to it. Reassign or delete them first.",
         });
       }
 

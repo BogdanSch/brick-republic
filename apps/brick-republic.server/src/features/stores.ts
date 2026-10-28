@@ -1,7 +1,7 @@
 import express, { type Request, type Response } from "express";
 import { Store } from "../models/index.js";
-import type { CreateStoreDto, UpdateStoreDto } from "../types/dtos.js";
 import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+import type { CreateStoreDto, UpdateStoreDto } from "shared/types/index.js";
 
 const router = express.Router();
 
@@ -45,11 +45,19 @@ router.put(
   async (req: Request, res: Response) => {
     try {
       const dto = req.body as UpdateStoreDto;
+      const id = req.params.id as string;
 
-      // Rewrite to native update
-      const store = await Store.findByIdAndUpdate(req.params.id, dto, {
-        new: true,
-      });
+      const store = await Store.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            ...dto,
+          },
+        },
+        {
+          new: true,
+        },
+      );
       if (!store) {
         return res.status(404).json({ message: "Store not found" });
       }

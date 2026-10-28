@@ -1,14 +1,13 @@
 import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 import {
   authenticateToken,
   authorizeRoles,
-  type TokenPayload,
+  type AuthenticatedRequest,
 } from "../middleware/auth.js";
 import { Order, Minifigure, Store } from "@models/index.js";
 import type { OrderStatus } from "@models/order.js";
-import type { CreateOrderDto } from "../types/dtos.js";
+import type { CreateOrderDto, TokenPayload } from "shared/types/index.js";
 
 const DELIVERY_TARRIF: number = 4.6;
 const router = express.Router();
@@ -16,13 +15,9 @@ const router = express.Router();
 router.get(
   "/my-orders",
   authenticateToken,
-  async (req: Request, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const token: string = req.headers.authorization?.split(" ")[1]!;
-      const decodedToken = jwt.decode(token) as {
-        userId: string;
-        email: string;
-      };
+      const decodedToken = req.user as TokenPayload;
 
       const orders = await Order.find({
         customerId: new mongoose.Types.ObjectId(decodedToken.userId),
@@ -89,70 +84,80 @@ router.get(
   },
 );
 
-router.post("/", authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const dto = req.body as CreateOrderDto;
-    const token = req.headers.authorization?.split(" ")[1]!;
-    const decodedToken = jwt.decode(token) as TokenPayload;
+// Handle the case when the amount of items get negative
+router.post(
+  "/",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const dto = req.body as CreateOrderDto;
+      const decodedToken = req.user as TokenPayload;
 
-    let itemsTotal: number = 0;
-    for (const item of dto.items) {
-      itemsTotal += item.priceAtPurchase * item.quantity;
+      let itemsTotal: number = 0;
+      for (const item of dto.items) {
+        itemsTotal += item.priceAtPurchase * item.quantity;
 
-      const conditionKey: string =
-        item.condition === "new" ? "stock.newCondition" : "stock.usedCondition";
-      await Minifigure.findByIdAndUpdate(item.minifigureId, {
-        $inc: { [conditionKey]: -item.quantity },
-      });
-    }
-
-    const shippingTotal: number =
-      dto.fulfillmentMethod === "delivery" ? DELIVERY_TARRIF : 0;
-    const finalTotal: number = itemsTotal + shippingTotal;
-
-    if (dto.fulfillmentMethod === "pickup" && dto.pickup?.storeId) {
-      const store = await Store.findById(dto.pickup.storeId);
-      if (!store) {
-        return res
-          .status(404)
-          .json({ message: "Selected pickup store not found." });
+        const conditionKey: string =
+          item.condition === "new"
+            ? "stock.newCondition"
+            : "stock.usedCondition";
+        await Minifigure.findByIdAndUpdate(item.minifigureId, {
+          $inc: { [conditionKey]: -item.quantity },
+        });
       }
 
-      dto.pickup.name = store.name;
-      dto.pickup.storeAddress = store.address;
-    }
+      const shippingTotal: number =
+        dto.fulfillmentMethod === "delivery" ? DELIVERY_TARRIF : 0;
+      const finalTotal: number = itemsTotal + shippingTotal;
 
-    const order = new Order({
-      ...dto,
-      customerId: decodedToken.userId,
-      status: "pending",
-      financials: {
-        itemsTotal: mongoose.Types.Decimal128.fromString(itemsTotal.toString()),
-        shippingTotal: mongoose.Types.Decimal128.fromString(
+      if (dto.fulfillmentMethod === "pickup" && dto.pickup?.storeId) {
+        const store = await Store.findById(dto.pickup.storeId);
+        if (!store) {
+          return res
+            .status(404)
+            .json({ message: "Selected pickup store not found." });
+        }
+
+        dto.pickup.name = store.name;
+        dto.pickup.storeAddress = store.address;
+      }
+
+      const order = new Order({
+        ...dto,
+        customerId: decodedToken.userId,
+        status: "pending",
+        financials: {
+          itemsTotal: mongoose.Types.Decimal128.fromString(
+            itemsTotal.toString(),
+          ),
+          shippingTotal: mongoose.Types.Decimal128.fromString(
+            shippingTotal.toString(),
+          ),
+          finalTotal: mongoose.Types.Decimal128.fromString(
+            finalTotal.toString(),
+          ),
+        },
+        items: dto.items.map((item) => ({
+          ...item,
+          priceAtPurchase: mongoose.Types.Decimal128.fromString(
+            item.priceAtPurchase.toString(),
+          ),
+        })),
+      });
+
+      if (dto.fulfillmentMethod === "delivery" && order.shipment) {
+        order.shipment.shippingCost = mongoose.Types.Decimal128.fromString(
           shippingTotal.toString(),
-        ),
-        finalTotal: mongoose.Types.Decimal128.fromString(finalTotal.toString()),
-      },
-      items: dto.items.map((item) => ({
-        ...item,
-        priceAtPurchase: mongoose.Types.Decimal128.fromString(
-          item.priceAtPurchase.toString(),
-        ),
-      })),
-    });
+        );
+      }
 
-    if (dto.fulfillmentMethod === "delivery" && order.shipment) {
-      order.shipment.shippingCost = mongoose.Types.Decimal128.fromString(
-        shippingTotal.toString(),
-      );
+      await order.save();
+      res.status(201).json(order.toDto());
+    } catch (e) {
+      res.status(500).json({ message: "Error creating order" });
     }
-
-    await order.save();
-    res.status(201).json(order.toDto());
-  } catch (e) {
-    res.status(500).json({ message: "Error creating order" });
-  }
-});
+  },
+);
 
 router.patch(
   "/:id/status",

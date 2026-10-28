@@ -3,10 +3,17 @@ import type { Application, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { authenticateToken, type TokenPayload } from "./middleware/auth.js";
+import {
+  authenticateToken,
+  type AuthenticatedRequest,
+} from "./middleware/auth.js";
 import minifiguresRouter from "./features/minifigures.js";
 import User from "./models/user.js";
-import type { LoginUserDto, RegisterUserDto } from "./types/dtos.js";
+import type {
+  LoginUserDto,
+  RegisterUserDto,
+  TokenPayload,
+} from "shared/types/index.js";
 
 dotenv.config();
 const app: Application = express();
@@ -73,25 +80,28 @@ app.post("/login", async (req, res) => {
   );
   res.json({ token });
 });
-app.get("/users/me", authenticateToken, async (req, res) => {
-  try {
-    const token: string = req.headers.authorization?.split(" ")[1]!;
-    const decodedToken = jwt.decode(token) as { userId: string; email: string };
+app.get(
+  "/users/me",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const decodedToken = req.user;
 
-    const user = await User.findOne({ _id: decodedToken.userId });
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
+      const user = await User.findOne({ _id: decodedToken?.userId });
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      res.json(user.toDto());
+    } catch (error) {
+      return res.status(401).json({
+        message: "Invalid or expired token",
       });
     }
-
-    res.json(user.toDto());
-  } catch (error) {
-    return res.status(401).json({
-      message: "Invalid or expired token",
-    });
-  }
-});
+  },
+);
 
 app.get("/minifigures", minifiguresRouter);
 

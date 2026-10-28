@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { BaseAddressSchema } from "./schemas/baseAddressSchema.js";
-import type { BaseAddress, StoreDto } from "../types/index.ts";
+import type { BaseAddress, StoreDto } from "shared/types/index.ts";
 
 type OpeningHoursDay = {
   open?: string;

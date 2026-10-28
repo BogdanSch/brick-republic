@@ -1,4 +1,15 @@
-import type { BaseAddress, UserProfile } from "./index.js";
+export type BaseAddress = {
+  street: string;
+  city: string;
+  postalCode: string;
+  country: string;
+};
+
+export type UserProfile = {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+};
 
 export type RegisterUserDto = {
   email: string;

@@ -1,12 +1,12 @@
 import express, { type Request, type Response } from "express";
-import { Minifigure, Theme } from "../models/index.js";
+import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
 import type { QueryParams } from "../utils/queryParams.js";
+import mongoose from "mongoose";
+import { Minifigure, Order, Theme } from "../models/index.js";
 import type {
   CreateMinifigureDto,
   UpdateMinifigureDto,
-} from "../types/dtos.js";
-import mongoose from "mongoose";
-import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+} from "shared/types/index.js";
 
 const router = express.Router();
 
@@ -92,6 +92,7 @@ router.put(
   async (req: Request, res: Response) => {
     try {
       const dto = req.body as UpdateMinifigureDto;
+      const id: string = req.params.id as string;
 
       const minifigure = await Minifigure.findById(req.params.id);
       if (!minifigure) {
@@ -100,37 +101,41 @@ router.put(
         });
       }
 
-      let theme: InstanceType<typeof Theme> | null = null;
+      let newTheme: InstanceType<typeof Theme> | null = null;
       if (minifigure.theme.themeId.toString() != dto.themeId) {
-        theme = await Theme.findById(dto.themeId);
-        if (!theme) {
+        newTheme = await Theme.findById(dto.themeId);
+        if (!newTheme) {
           return res.status(404).json({
             message: "The associated theme is not found",
           });
         }
       }
 
-      // Rewrite to native update
-      minifigure.name = dto.name;
-      if (theme) {
-        minifigure.theme.themeId = theme._id;
-        minifigure.theme.slug = theme.slug;
-        minifigure.theme.name = theme.name;
-      }
-      minifigure.pricing = {
-        retailPrice: mongoose.Types.Decimal128.fromString(
-          dto.retailPrice.toString(),
-        ),
-      };
-      minifigure.yearReleased = dto.yearReleased;
-      minifigure.stock = {
-        newCondition: dto.stock.newCondition,
-        usedCondition: dto.stock.usedCondition,
-      };
-      minifigure.accessories = dto.accessories;
-      minifigure.tags = dto.tags;
-
-      await minifigure.save();
+      Minifigure.updateOne(
+        { _id: id },
+        {
+          $set: {
+            name: dto.name,
+            theme: {
+              themeId: newTheme?._id,
+              slug: newTheme?.slug,
+              name: newTheme?.name,
+            },
+            pricing: {
+              retailPrice: mongoose.Types.Decimal128.fromString(
+                dto.retailPrice.toString(),
+              ),
+            },
+            yearReleased: dto.yearReleased,
+            stock: {
+              newCondition: dto.stock.newCondition,
+              usedCondition: dto.stock.usedCondition,
+            },
+            accessories: dto.accessories,
+            tags: dto.tags,
+          },
+        },
+      );
 
       res.sendStatus(204);
     } catch (e) {
@@ -143,7 +148,25 @@ router.put(
 
 router.delete("/:id", async (req: Request, res: Response) => {
   const targetId: string | undefined = req.params.id?.toString();
+
   try {
+    const activeOrderExists = await Order.exists([
+      {
+        "items.minifigureId": targetId,
+      },
+      {
+        status: {
+          $in: ["pending", "processing", "shipped"],
+        },
+      },
+    ]);
+    if (activeOrderExists) {
+      return res.status(409).json({
+        message:
+          "Cannot delete the minifigure. There are still active orders assigned to it. Complete or delete them first.",
+      });
+    }
+
     await Minifigure.deleteOne({ _id: req.params.id });
     res.sendStatus(204);
   } catch (e) {

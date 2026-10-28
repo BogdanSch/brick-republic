@@ -1,0 +1,23 @@
+{
+  "name": "brick-republic",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BogdanSch/brick-republic.git"
+  },
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "allowScripts": {
+    "bcrypt": true,
+    "esbuild": true
+  }
+}
