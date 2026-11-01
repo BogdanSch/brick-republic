@@ -1,19 +1,14 @@
 import express from "express";
-import type { Application, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import type { Application, Response } from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import {
-  authenticateToken,
-  type AuthenticatedRequest,
-} from "./middleware/auth.js";
+
 import minifiguresRouter from "./features/minifigures.js";
-import User from "./models/user.js";
-import type {
-  LoginUserDto,
-  RegisterUserDto,
-  TokenPayload,
-} from "shared/types/index.js";
+import orderRouter from "./features/orders.js";
+import storeRouter from "./features/stores.js";
+import themeRouter from "./features/themes.js";
+import accountRouter from "./features/account.js";
 
 dotenv.config();
 const app: Application = express();
@@ -21,89 +16,22 @@ const port: number = 3000;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 mongoose.connect(process.env.MONGO_URI!).then(() => {
   console.log("Connected to MongoDB");
 });
 
-app.post("/signup", async (req, res) => {
-  const dto: RegisterUserDto = req.body;
-
-  const existingUser = await User.findOne({ email: dto.email });
-  if (existingUser) {
-    return res.status(409).json({
-      message: "User already exists",
-    });
-  }
-
-  try {
-    const user = new User({
-      email: dto.email,
-      password: dto.password,
-      role: "customer",
-      profile: {
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        phoneNumber: dto.phoneNumber,
-      },
-    });
-    await user.save();
-  } catch (error) {
-    return res.status(500).json({
-      message: "Error registering user",
-    });
-  }
-
-  res.status(201).json({
-    message: "User registered successfully",
-  });
-});
-app.post("/login", async (req, res) => {
-  const dto: LoginUserDto = req.body;
-  const user = await User.findOne({ email: dto.email });
-
-  if (!user || !user.comparePassword(dto.password)) {
-    return res.status(401).json({
-      message: "Invalid email or password",
-    });
-  }
-  const token = jwt.sign(
-    {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    } as TokenPayload,
-    process.env.JWT_SECRET_KEY!,
-    {
-      expiresIn: "1d",
-    },
-  );
-  res.json({ token });
-});
-app.get(
-  "/users/me",
-  authenticateToken,
-  async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const decodedToken = req.user;
-
-      const user = await User.findOne({ _id: decodedToken?.userId });
-      if (!user) {
-        return res.status(404).json({
-          message: "User not found",
-        });
-      }
-
-      res.json(user.toDto());
-    } catch (error) {
-      return res.status(401).json({
-        message: "Invalid or expired token",
-      });
-    }
-  },
-);
-
-app.get("/minifigures", minifiguresRouter);
+app.use("/api/minifigures", minifiguresRouter);
+app.use("/api/themes", themeRouter);
+app.use("/api/stores", storeRouter);
+app.use("/api/orders", orderRouter);
+app.use("/api/account", accountRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

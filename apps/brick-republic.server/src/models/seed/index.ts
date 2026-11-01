@@ -47,6 +47,8 @@ async function seedDatabase() {
     const minifigures = [
       {
         name: "Phase-2 Commander Cody",
+        previewUrl:
+          "https://th.bing.com/th/id/R.63d5282ba157038fd8482729cf0f4f7f?rik=g%2bFkeDKIKOI8lA&pid=ImgRaw&r=0",
         theme: {
           themeId: starWarsTheme._id,
           slug: starWarsTheme.slug,
@@ -65,6 +67,8 @@ async function seedDatabase() {
       },
       {
         name: "Inquisitor Marrok",
+        previewUrl:
+          "https://i.etsystatic.com/65153611/r/il/a5ad33/7865610080/il_1080xN.7865610080_7l8f.jpg",
         theme: {
           themeId: starWarsTheme._id,
           slug: starWarsTheme.slug,

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { routeTree } from "./routeTree.gen";
+import "@/scss/main.scss";
 
 const router = createRouter({ routeTree });
 

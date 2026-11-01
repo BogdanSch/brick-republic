@@ -84,7 +84,6 @@ router.get(
   },
 );
 
-// Handle the case when the amount of items get negative
 router.post(
   "/",
   authenticateToken,
@@ -101,9 +100,22 @@ router.post(
           item.condition === "new"
             ? "stock.newCondition"
             : "stock.usedCondition";
-        await Minifigure.findByIdAndUpdate(item.minifigureId, {
-          $inc: { [conditionKey]: -item.quantity },
-        });
+        const result = await Minifigure.updateOne(
+          {
+            _id: item.minifigureId,
+            [conditionKey]: {
+              $gte: item.quantity,
+            },
+          },
+          {
+            $inc: { [conditionKey]: -item.quantity },
+          },
+        );
+        if (result.modifiedCount != 1) {
+          return res.status(409).json({
+            message: `Insufficient stock for ${item.name} (${item.condition} condition). Order cancelled.`,
+          });
+        }
       }
 
       const shippingTotal: number =

@@ -1,8 +1,9 @@
 import mongoose, { Schema } from "mongoose";
-import type { MinifigureDto } from "../types/dtos.js";
+import type { MinifigureDto } from "shared/types/index.js";
 
 type Minifigure = {
   name: string;
+  previewUrl: string;
   theme: {
     themeId: mongoose.Types.ObjectId;
     slug: string;
@@ -47,6 +48,7 @@ const ThemeReferenceSchema = new Schema(
 
 const MinifigureSchema = new Schema<Minifigure>({
   name: { type: String, required: true, minLength: 3 },
+  previewUrl: { type: String, required: true },
   theme: { type: ThemeReferenceSchema, required: true },
   yearReleased: { type: Number, required: true, min: 1978 },
   pricing: { type: PricingSchema, required: true },
@@ -59,6 +61,7 @@ MinifigureSchema.methods.toDto = function (): MinifigureDto {
   return {
     id: this._id.toString(),
     name: this.name,
+    previewUrl: this.previewUrl,
     theme: {
       slug: this.theme.slug,
       name: this.theme.name,

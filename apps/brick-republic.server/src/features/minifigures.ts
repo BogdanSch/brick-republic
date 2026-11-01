@@ -17,14 +17,15 @@ router.get("/", async (req: Request, res: Response) => {
   if (query.theme) {
     filters["theme.name"] = query.theme;
   }
-  filters["pricing.retailPrice"] = {};
-  if (query.minPrice) {
-    filters["pricing.retailPrice"].$gte = Number(query.minPrice);
+  if (query.minPrice || query.maxPrice) {
+    filters["pricing.retailPrice"] = {};
+    if (query.minPrice) {
+      filters["pricing.retailPrice"].$gte = Number(query.minPrice);
+    }
+    if (query.maxPrice) {
+      filters["pricing.retailPrice"].$lte = Number(query.maxPrice);
+    }
   }
-  if (query.maxPrice) {
-    filters["pricing.retailPrice"].$lte = Number(query.maxPrice);
-  }
-
   const minifigures = await Minifigure.find(filters);
 
   const minifiguresDto = await Promise.all(minifigures.map((mf) => mf.toDto()));
@@ -58,6 +59,7 @@ router.post(
 
       const minifigure = new Minifigure({
         name: dto.name,
+        previewUrl: dto.previewUrl,
         theme: {
           themeId: theme._id,
           slug: theme.slug,
@@ -102,7 +104,7 @@ router.put(
       }
 
       let newTheme: InstanceType<typeof Theme> | null = null;
-      if (minifigure.theme.themeId.toString() != dto.themeId) {
+      if (minifigure.theme.themeId.toString() !== dto.themeId) {
         newTheme = await Theme.findById(dto.themeId);
         if (!newTheme) {
           return res.status(404).json({
@@ -111,16 +113,19 @@ router.put(
         }
       }
 
-      Minifigure.updateOne(
+      await Minifigure.updateOne(
         { _id: id },
         {
           $set: {
             name: dto.name,
-            theme: {
-              themeId: newTheme?._id,
-              slug: newTheme?.slug,
-              name: newTheme?.name,
-            },
+            previewUrl: dto.previewUrl,
+            theme: newTheme
+              ? {
+                  themeId: newTheme._id,
+                  slug: newTheme.slug,
+                  name: newTheme.name,
+                }
+              : minifigure.theme,
             pricing: {
               retailPrice: mongoose.Types.Decimal128.fromString(
                 dto.retailPrice.toString(),
@@ -147,19 +152,13 @@ router.put(
 );
 
 router.delete("/:id", async (req: Request, res: Response) => {
-  const targetId: string | undefined = req.params.id?.toString();
+  const targetId: string = req.params.id?.toString()!;
 
   try {
-    const activeOrderExists = await Order.exists([
-      {
-        "items.minifigureId": targetId,
-      },
-      {
-        status: {
-          $in: ["pending", "processing", "shipped"],
-        },
-      },
-    ]);
+    const activeOrderExists = await Order.exists({
+      "items.minifigureId": targetId,
+      status: { $in: ["pending", "processing", "shipped"] },
+    });
     if (activeOrderExists) {
       return res.status(409).json({
         message:
@@ -187,25 +186,22 @@ router.patch(
         return res
           .status(400)
           .json({ message: "Provide a valid positive percentage." });
+      const multiplier = 1 + inflationPercentage / 100;
 
-      const result = await Minifigure.updateMany(
-        {},
+      const result = await Minifigure.updateMany({}, [
         {
           $set: {
             "pricing.retailPrice": {
               $round: [
                 {
-                  $multiply: [
-                    "$pricing.retailPrice",
-                    inflationPercentage / 100,
-                  ],
+                  $multiply: ["$pricing.retailPrice", multiplier],
                 },
                 2,
               ],
             },
           },
         },
-      );
+      ]);
 
       res.status(200).json({
         message: `Successfully applied a ${inflationPercentage}% price increase.`,

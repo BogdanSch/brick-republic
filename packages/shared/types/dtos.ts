@@ -45,6 +45,7 @@ export type UserDto = {
 export type MinifigureDto = {
   id: string;
   name: string;
+  previewUrl: string;
   theme: {
     slug: string;
     name: string;
@@ -63,6 +64,7 @@ export type MinifigureDto = {
 
 export type CreateMinifigureDto = {
   name: string;
+  previewUrl: string;
   themeId: string;
   yearReleased: number;
   retailPrice: number;
@@ -76,6 +78,7 @@ export type CreateMinifigureDto = {
 
 export type UpdateMinifigureDto = {
   name: string;
+  previewUrl: string;
   themeId: string;
   yearReleased: number;
   retailPrice: number;
@@ -169,7 +172,23 @@ export type OrderDto = {
   };
 };
 
-export type CreateOrderDto = Omit<
-  OrderDto,
-  "id" | "orderDate" | "status" | "financials" | "shippingCost"
->;
+export type CreateOrderDto = {
+  fulfillmentMethod: "delivery" | "pickup";
+  items: Array<{
+    minifigureId: string;
+    name: string;
+    condition: string;
+    quantity: number;
+    priceAtPurchase: number;
+  }>;
+  shipment?: {
+    carrier: string;
+    serviceLevel: string;
+    shippingAddress: BaseAddress;
+  };
+  pickup?: {
+    storeId: string;
+    name?: string;
+    storeAddress?: BaseAddress;
+  };
+};
