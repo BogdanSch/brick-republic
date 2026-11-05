@@ -1,11 +1,17 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import type {
+  UserAddressDto,
   BaseAddress,
   UserProfile,
   UserDto,
   UserRole,
 } from "shared/types/index.js";
+
+type UserAddress = BaseAddress & {
+  _id: mongoose.Types.ObjectId;
+  isDefault: boolean;
+};
 
 type User = {
   email: string;
@@ -15,12 +21,7 @@ type User = {
   adminProfile?: {
     department: string;
   };
-  addresses?: [
-    {
-      label: string;
-      isDefault: boolean;
-    } & BaseAddress,
-  ];
+  addresses?: [UserAddress];
   wishlist?: [mongoose.Types.ObjectId];
   lastLogin?: Date;
   createdAt: Date;
@@ -46,16 +47,16 @@ const AdminProfileSchema = new Schema(
   { _id: false },
 );
 
-const AddressSchema = new Schema(
+// Inhertit from BaseAddressSchema to avoid duplication of address fields
+const UserAddressSchema = new Schema(
   {
-    label: { type: String, required: true },
     street: { type: String, required: true },
     city: { type: String, required: true },
     postalCode: { type: String, required: true },
     country: { type: String, required: true },
     isDefault: { type: Boolean, required: true, default: false },
   },
-  { _id: false },
+  { _id: true },
 );
 
 const UserSchema = new Schema<User>({
@@ -64,7 +65,7 @@ const UserSchema = new Schema<User>({
   role: { type: String, enum: ["customer", "admin"], default: "customer" },
   profile: { type: ProfileSchema, required: false },
   adminProfile: { type: AdminProfileSchema, required: false },
-  addresses: [AddressSchema],
+  addresses: [UserAddressSchema],
   wishlist: [
     {
       type: Schema.Types.ObjectId,
@@ -76,18 +77,11 @@ const UserSchema = new Schema<User>({
   createdAt: { type: Date, default: Date.now },
 });
 
-UserSchema.pre("save", function (next: any) {
-  if (!this.isModified("password")) return next();
+UserSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
-  bcrypt.genSalt(SALT_WORK_FACTOR, (err, salt) => {
-    if (err) return next(err);
-
-    bcrypt.hash(this.password, salt, (err, hash) => {
-      if (err) return next(err);
-      this.password = hash;
-      next();
-    });
-  });
+  const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 UserSchema.methods.comparePassword = async function (
@@ -102,7 +96,14 @@ UserSchema.methods.toDto = function () {
     role: this.role,
     profile: this.profile,
     adminProfile: this.adminProfile,
-    addresses: this.addresses,
+    addresses: this.addresses?.map((address: UserAddress): UserAddressDto => ({
+      id: address._id.toString(),
+      street: address.street,
+      city: address.city,
+      postalCode: address.postalCode,
+      country: address.country,
+      isDefault: address.isDefault,
+    })),
     wishlist: this.wishlist,
     lastLogin: this.lastLogin,
     createdAt: this.createdAt,

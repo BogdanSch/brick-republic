@@ -3,13 +3,9 @@ import { BaseAddressSchema } from "./schemas/baseAddressSchema.js";
 import type { BaseAddress, OrderDto } from "shared/types/index.ts";
 
 export type OrderStatus =
-  | "pending"
-  | "processing"
-  | "shipped"
-  | "delivered"
-  | "cancelled";
+  "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
-type MinifigureOrder = {
+export type MinifigureOrder = {
   minifigureId: mongoose.Types.ObjectId;
   name: string;
   condition: string;

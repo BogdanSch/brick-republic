@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCart } from "../contexts";
-import { Table, Button, ButtonGroup } from "react-bootstrap";
+import { Table, Button, ButtonGroup, Container } from "react-bootstrap";
 
 export const Route = createFileRoute("/cart")({
   component: function CartPage() {
@@ -16,80 +16,89 @@ export const Route = createFileRoute("/cart")({
     }
 
     return (
-      <section className="cart-page">
-        <h1 className="mb-4">Your Cart</h1>
-        <Table responsive hover className="align-middle shadow-sm">
-          <thead className="table-light">
-            <tr>
-              <th>Item</th>
-              <th>Condition</th>
-              <th>Price</th>
-              <th>Quantity</th>
-              <th>Subtotal</th>
-              <th className="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={`${item.minifigureId}-${item.condition}`}>
-                <td className="fw-medium">{item.name}</td>
-                <td className="text-capitalize text-muted">{item.condition}</td>
-                <td>${item.priceAtPurchase.toFixed(2)}</td>
-                <td>
-                  <ButtonGroup size="sm">
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() =>
-                        updateQuantity(item.minifigureId, item.condition, -1)
-                      }
-                    >
-                      -
-                    </Button>
-                    <Button
-                      variant="outline-secondary"
-                      disabled
-                      className="px-3 text-dark fw-bold border-secondary"
-                    >
-                      {item.quantity}
-                    </Button>
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() =>
-                        updateQuantity(item.minifigureId, item.condition, 1)
-                      }
-                    >
-                      +
-                    </Button>
-                  </ButtonGroup>
-                </td>
-                <td className="fw-semibold">
-                  ${(item.priceAtPurchase * item.quantity).toFixed(2)}
-                </td>
-                <td className="text-end">
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() =>
-                      removeFromCart(item.minifigureId, item.condition)
-                    }
-                  >
-                    Remove
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-
-        <div className="cart-page__actions border-top pt-4">
-          <h2 className="mb-0 me-auto">Total: ${itemsTotal.toFixed(2)}</h2>
-          <Button variant="outline-secondary" onClick={clearCart}>
-            Clear Cart
-          </Button>
-          <Button variant="dark" size="lg" className="fw-medium px-4">
-            Proceed to Checkout
-          </Button>
-        </div>
+      <section className="cart-page mt-5">
+        <Container>
+          <div className="cart-page__wrap">
+            <h1 className="mb-4">Your Cart</h1>
+            <Table responsive hover className="align-middle shadow-sm">
+              <thead className="table-light">
+                <tr>
+                  <th>Item</th>
+                  <th>Condition</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Subtotal</th>
+                  <th className="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={`${item.minifigureId}-${item.condition}`}>
+                    <td className="fw-medium">{item.name}</td>
+                    <td className="text-capitalize text-muted">
+                      {item.condition}
+                    </td>
+                    <td>${item.priceAtPurchase.toFixed(2)}</td>
+                    <td>
+                      <ButtonGroup size="sm">
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() =>
+                            updateQuantity(
+                              item.minifigureId,
+                              item.condition,
+                              -1,
+                            )
+                          }
+                        >
+                          -
+                        </Button>
+                        <Button
+                          variant="outline-secondary"
+                          disabled
+                          className="px-3 text-dark fw-bold border-secondary"
+                        >
+                          {item.quantity}
+                        </Button>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() =>
+                            updateQuantity(item.minifigureId, item.condition, 1)
+                          }
+                        >
+                          +
+                        </Button>
+                      </ButtonGroup>
+                    </td>
+                    <td className="fw-semibold">
+                      ${(item.priceAtPurchase * item.quantity).toFixed(2)}
+                    </td>
+                    <td className="text-end">
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() =>
+                          removeFromCart(item.minifigureId, item.condition)
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <div className="cart-page__actions border-top pt-4">
+              <h2 className="mb-0 me-auto">Total: ${itemsTotal.toFixed(2)}</h2>
+              <Button variant="outline-secondary" onClick={clearCart}>
+                Clear Cart
+              </Button>
+              <Link to="/checkout" className="fw-medium px-4">
+                Proceed to Checkout
+              </Link>
+            </div>
+          </div>
+        </Container>
       </section>
     );
   },

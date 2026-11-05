@@ -12,6 +12,7 @@ type Minifigure = {
   yearReleased: number;
   pricing: {
     retailPrice: mongoose.Types.Decimal128;
+    usedRetailPrice: mongoose.Types.Decimal128;
   };
   stock: {
     newCondition: number;
@@ -25,6 +26,11 @@ type Minifigure = {
 const PricingSchema = new Schema(
   {
     retailPrice: { type: mongoose.Types.Decimal128, required: true, min: 0 },
+    usedRetailPrice: {
+      type: mongoose.Types.Decimal128,
+      required: true,
+      min: 0,
+    },
   },
   { _id: false },
 );
@@ -70,6 +76,7 @@ MinifigureSchema.methods.toDto = function (): MinifigureDto {
     yearReleased: this.yearReleased,
     pricing: {
       retailPrice: parseFloat(this.pricing.retailPrice.toString()),
+      usedRetailPrice: parseFloat(this.pricing.usedRetailPrice.toString()),
     },
     stock: {
       newCondition: this.stock.newCondition,

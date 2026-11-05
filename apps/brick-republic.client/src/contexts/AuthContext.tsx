@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { jwtDecode } from "jwt-decode";
 import type { TokenPayload } from "shared/types";
 import useLocalStorage from "../hooks/useLocalStorage";
@@ -24,22 +18,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     "token",
     null,
   );
-  const [user, setUser] = useState<TokenPayload | null>(null);
 
-  useEffect(() => {
-    if (token) {
-      try {
-        const decoded = jwtDecode<TokenPayload>(token);
-        setUser(decoded);
-        localStorage.setItem("token", token);
-      } catch (e) {
-        logout();
-      }
-    } else {
-      setUser(null);
+  const user = useMemo<TokenPayload | null>(() => {
+    if (!token) return null;
+    try {
+      return jwtDecode<TokenPayload>(token);
+    } catch (e) {
       removeToken();
+      return null;
     }
-  }, [token]);
+  }, [token, removeToken]);
 
   const login = (newToken: string) => setToken(newToken);
   const logout = () => removeToken();

@@ -68,6 +68,7 @@ router.post(
         yearReleased: dto.yearReleased,
         pricing: {
           retailPrice: dto.retailPrice,
+          usedRetailPrice: dto.usedRetailPrice,
         },
         stock: {
           newCondition: dto.stock.newCondition,
@@ -130,6 +131,9 @@ router.put(
               retailPrice: mongoose.Types.Decimal128.fromString(
                 dto.retailPrice.toString(),
               ),
+              usedRetailPrice: mongoose.Types.Decimal128.fromString(
+                dto.usedRetailPrice.toString(),
+              ),
             },
             yearReleased: dto.yearReleased,
             stock: {
@@ -181,33 +185,59 @@ router.patch(
   authorizeRoles("admin"),
   async (req: Request, res: Response) => {
     try {
-      const inflationPercentage = req.body as number;
-      if (inflationPercentage <= 0)
+      const inflationPercentage = Number(req.body?.inflationPercentage);
+
+      if (isNaN(inflationPercentage) || inflationPercentage <= 0) {
         return res
           .status(400)
           .json({ message: "Provide a valid positive percentage." });
+      }
+
       const multiplier = 1 + inflationPercentage / 100;
 
-      const result = await Minifigure.updateMany({}, [
-        {
-          $set: {
-            "pricing.retailPrice": {
-              $round: [
-                {
-                  $multiply: ["$pricing.retailPrice", multiplier],
+      const result = await Minifigure.updateMany(
+        {},
+        [
+          {
+            $set: {
+              "pricing.retailPrice": {
+                $toDecimal: {
+                  $round: [
+                    {
+                      $multiply: [
+                        { $toDouble: "$pricing.retailPrice" },
+                        multiplier,
+                      ],
+                    },
+                    2,
+                  ],
                 },
-                2,
-              ],
+              },
+              "pricing.usedRetailPrice": {
+                $toDecimal: {
+                  $round: [
+                    {
+                      $multiply: [
+                        { $toDouble: "$pricing.usedRetailPrice" },
+                        multiplier,
+                      ],
+                    },
+                    2,
+                  ],
+                },
+              },
             },
           },
-        },
-      ]);
+        ],
+        { updatePipeline: true },
+      );
 
-      res.status(200).json({
+      return res.status(200).json({
         message: `Successfully applied a ${inflationPercentage}% price increase.`,
         countUpdates: result.modifiedCount,
       });
     } catch (e) {
+      console.error("Error applying inflation:", e);
       return res.status(500).json({
         message: "Error updating minifigure",
       });

@@ -5,11 +5,19 @@ export type BaseAddress = {
   country: string;
 };
 
+export type CreateUserAddressDto = BaseAddress & { isDefault: boolean };
+export type UserAddressDto = BaseAddress & {
+  id: string;
+  isDefault: boolean;
+};
+export type UpdateUserAddressDto = CreateUserAddressDto & {};
+
 export type UserProfile = {
   firstName: string;
   lastName: string;
   phoneNumber: string;
 };
+export type UpdateUserProfileDto = UserProfile & {};
 
 export type RegisterUserDto = {
   email: string;
@@ -31,12 +39,7 @@ export type UserDto = {
   adminProfile?: {
     department: string;
   };
-  addresses?: [
-    {
-      label: string;
-      isDefault: boolean;
-    } & BaseAddress,
-  ];
+  addresses?: UserAddressDto[];
   wishlist?: string[];
   lastLogin?: Date;
   createdAt: Date;
@@ -54,6 +57,7 @@ export type MinifigureDto = {
   yearReleased: number;
   pricing: {
     retailPrice: number;
+    usedRetailPrice: number;
   };
   stock: {
     newCondition: number;
@@ -69,6 +73,7 @@ export type CreateMinifigureDto = {
   themeId: string;
   yearReleased: number;
   retailPrice: number;
+  usedRetailPrice: number;
   stock: {
     newCondition: number;
     usedCondition: number;
@@ -83,6 +88,7 @@ export type UpdateMinifigureDto = {
   themeId: string;
   yearReleased: number;
   retailPrice: number;
+  usedRetailPrice: number;
   stock: {
     newCondition: number;
     usedCondition: number;
@@ -173,15 +179,15 @@ export type OrderDto = {
   };
 };
 
+export type ItemInCartDto = {
+  minifigureId: string;
+  condition: string;
+  quantity: number;
+};
+
 export type CreateOrderDto = {
   fulfillmentMethod: "delivery" | "pickup";
-  items: Array<{
-    minifigureId: string;
-    name: string;
-    condition: string;
-    quantity: number;
-    priceAtPurchase: number;
-  }>;
+  items: ItemInCartDto[];
   shipment?: {
     carrier: string;
     serviceLevel: string;

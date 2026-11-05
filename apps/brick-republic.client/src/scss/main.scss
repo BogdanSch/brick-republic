@@ -7,7 +7,14 @@
 }
 
 body {
-  background-color: #ddeaf9;
+  background-color: $light-blue !important;
+}
+
+header {
+  position: sticky;
+  inset: 0;
+  z-index: 1000;
+  background-color: $light-gray;
 }
 
 h1,

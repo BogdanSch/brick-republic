@@ -8,20 +8,20 @@ import { useAuth, useCart, type AuthContextType } from "../contexts";
 import { Navbar, Nav, Container, Badge, Button } from "react-bootstrap";
 
 function Navigation() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { items } = useCart();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <header className="header shadow-sm border-bottom">
       <Container>
-        <Navbar>
+        <Navbar expand="lg">
           <Navbar.Brand as={Link} to="/" className="fw-bold fs-4">
             Brick Republic
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="me-auto">
+            <Nav className="me-auto align-items-lg-center">
               <Nav.Link
                 as={Link}
                 to="/cart"
@@ -32,11 +32,26 @@ function Navigation() {
                   {cartCount}
                 </Badge>
               </Nav.Link>
+              {user && (
+                <Nav.Link as={Link} to="/dashboard/account">
+                  Dashboard
+                </Nav.Link>
+              )}
+              {isAdmin && (
+                <>
+                  <Nav.Link as={Link} to="/admin/inventory">
+                    Inventory Manager
+                  </Nav.Link>
+                  <Nav.Link as={Link} to="/admin/orders">
+                    Fulfillment Board
+                  </Nav.Link>
+                </>
+              )}
             </Nav>
-            <Nav className="align-items-center gap-3">
+            <Nav className="align-items-lg-center gap-3 mt-3 mt-lg-0">
               {user ? (
                 <>
-                  <Navbar.Text className="text-dark fw-medium">
+                  <Navbar.Text className="text-dark fw-medium mb-2 mb-lg-0">
                     Hello, {user.email}
                   </Navbar.Text>
                   <Button variant="outline-dark" size="sm" onClick={logout}>
@@ -44,9 +59,14 @@ function Navigation() {
                   </Button>
                 </>
               ) : (
-                <Nav.Link as={Link} to="/auth/login">
-                  Login
-                </Nav.Link>
+                <>
+                  <Nav.Link as={Link} to="/auth/login">
+                    Login
+                  </Nav.Link>
+                  <Nav.Link as={Link} to="/auth/register">
+                    Register
+                  </Nav.Link>
+                </>
               )}
             </Nav>
           </Navbar.Collapse>
@@ -64,10 +84,10 @@ export const Route = createRootRouteWithContext<IRouterContext>()({
   component: () => (
     <>
       <Navigation />
-      <Container as="main" className="mb-5">
+      <main className="main">
         <Outlet />
         <TanStackRouterDevtools />
-      </Container>
+      </main>
     </>
   ),
 });

@@ -37,8 +37,7 @@ async function seedDatabase() {
       description:
         "Build your army with clones, Jedi, and Sith from across the galaxy.",
       visuals: {
-        heroBanner: "/images/themes/star-wars-hero.jpg",
-        icon: "/images/themes/star-wars-icon.png",
+        icon: "https://www.brickeconomy.com/images/themes/themeimage-star-wars.png",
       },
     });
     await starWarsTheme.save();
@@ -57,6 +56,7 @@ async function seedDatabase() {
         yearReleased: 2022,
         pricing: {
           retailPrice: mongoose.Types.Decimal128.fromString("35.00"),
+          usedRetailPrice: mongoose.Types.Decimal128.fromString("25.00"),
         },
         stock: {
           newCondition: 12,
@@ -77,6 +77,7 @@ async function seedDatabase() {
         yearReleased: 2023,
         pricing: {
           retailPrice: mongoose.Types.Decimal128.fromString("18.50"),
+          usedRetailPrice: mongoose.Types.Decimal128.fromString("13.00"),
         },
         stock: {
           newCondition: 5,
@@ -90,22 +91,22 @@ async function seedDatabase() {
     await Minifigure.insertMany(minifigures);
 
     console.log("Seeding Store Location...");
-    const amsterdamStore = new Store({
-      name: "MinifigStore Amsterdam Centrum",
+    const store = new Store({
+      name: "MinifigStore Kharkiv Center",
       address: {
-        label: "Main Storefront",
-        street: "Kalverstraat 10",
-        city: "Amsterdam",
-        postalCode: "1012 NX",
-        country: "Netherlands",
+        label: "Regional Hub",
+        street: "Sumska Street 1",
+        city: "Kharkiv",
+        postalCode: "61057",
+        country: "Ukraine",
         isDefault: true,
       },
       location: {
         type: "Point",
-        coordinates: [4.8922, 52.3702],
+        coordinates: [36.2304, 49.9935],
       },
       openingHours: {
-        monday: { open: "12:00", close: "18:00", isClosed: false },
+        monday: { open: "10:00", close: "18:00", isClosed: false },
         tuesday: { open: "09:00", close: "18:00", isClosed: false },
         wednesday: { open: "09:00", close: "18:00", isClosed: false },
         thursday: { open: "09:00", close: "21:00", isClosed: false },
@@ -114,7 +115,7 @@ async function seedDatabase() {
         sunday: { open: null, close: null, isClosed: true },
       },
     });
-    await amsterdamStore.save();
+    await store.save();
 
     console.log("Database seeded successfully!");
     process.exit(0);

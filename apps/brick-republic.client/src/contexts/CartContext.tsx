@@ -1,10 +1,5 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useMemo,
-  type ReactNode,
-} from "react";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 export type CartItem = {
   minifigureId: string;
@@ -26,7 +21,7 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems, removeItems] = useLocalStorage<CartItem[]>("", []);
 
   const itemsTotal = useMemo(() => {
     return items.reduce(
@@ -53,11 +48,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateQuantity = (id: string, condition: string, delta: number) => {
+  const updateQuantity = (id: string, condition: string, newValue: number) => {
     setItems((prev) =>
       prev.map((item) => {
         if (item.minifigureId === id && item.condition === condition) {
-          const newQuantity = Math.max(1, item.quantity + delta);
+          const newQuantity = Math.max(1, item.quantity + newValue);
           return { ...item, quantity: newQuantity };
         }
         return item;
@@ -71,7 +66,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => removeItems();
 
   return (
     <CartContext.Provider

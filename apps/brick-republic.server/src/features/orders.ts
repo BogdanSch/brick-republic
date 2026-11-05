@@ -6,7 +6,7 @@ import {
   type AuthenticatedRequest,
 } from "../middleware/auth.js";
 import { Order, Minifigure, Store } from "@models/index.js";
-import type { OrderStatus } from "@models/order.js";
+import type { MinifigureOrder, OrderStatus } from "@models/order.js";
 import type { CreateOrderDto, TokenPayload } from "shared/types/index.js";
 
 const DELIVERY_TARRIF: number = 4.6;
@@ -93,14 +93,21 @@ router.post(
       const decodedToken = req.user as TokenPayload;
 
       let itemsTotal: number = 0;
-      for (const item of dto.items) {
-        itemsTotal += item.priceAtPurchase * item.quantity;
+      const orderItems: MinifigureOrder[] = [];
 
+      for (const item of dto.items) {
+        if (item.condition !== "new" && item.condition !== "used") {
+          return res.status(400).json({ message: "Invalid item condition." });
+        }
+        if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+          return res.status(400).json({ message: "Invalid item quantity." });
+        }
         const conditionKey: string =
           item.condition === "new"
             ? "stock.newCondition"
             : "stock.usedCondition";
-        const result = await Minifigure.updateOne(
+
+        const minifigure = await Minifigure.findOneAndUpdate(
           {
             _id: item.minifigureId,
             [conditionKey]: {
@@ -110,18 +117,32 @@ router.post(
           {
             $inc: { [conditionKey]: -item.quantity },
           },
+          { new: true },
         );
-        if (result.modifiedCount != 1) {
+        if (!minifigure) {
           return res.status(409).json({
-            message: `Insufficient stock for ${item.name} (${item.condition} condition). Order cancelled.`,
+            message: `Insufficient stock for ${item.minifigureId} (${item.condition} condition). Order cancelled.`,
           });
         }
+
+        const unitPrice: mongoose.Types.Decimal128 =
+          item.condition === "new"
+            ? minifigure.pricing.retailPrice
+            : minifigure.pricing.usedRetailPrice;
+
+        itemsTotal += Number(unitPrice.toString()) * item.quantity;
+        orderItems.push({
+          minifigureId: minifigure._id,
+          name: minifigure.name,
+          condition: item.condition,
+          quantity: item.quantity,
+          priceAtPurchase: mongoose.Types.Decimal128.fromString(
+            unitPrice.toString(),
+          ),
+        });
       }
 
-      const shippingTotal: number =
-        dto.fulfillmentMethod === "delivery" ? DELIVERY_TARRIF : 0;
-      const finalTotal: number = itemsTotal + shippingTotal;
-
+      let shippingTotal: number = 0;
       if (dto.fulfillmentMethod === "pickup" && dto.pickup?.storeId) {
         const store = await Store.findById(dto.pickup.storeId);
         if (!store) {
@@ -132,7 +153,10 @@ router.post(
 
         dto.pickup.name = store.name;
         dto.pickup.storeAddress = store.address;
+      } else if (dto.fulfillmentMethod === "delivery") {
+        shippingTotal = DELIVERY_TARRIF;
       }
+      const finalTotal: number = itemsTotal + shippingTotal;
 
       const order = new Order({
         ...dto,
@@ -149,12 +173,7 @@ router.post(
             finalTotal.toString(),
           ),
         },
-        items: dto.items.map((item) => ({
-          ...item,
-          priceAtPurchase: mongoose.Types.Decimal128.fromString(
-            item.priceAtPurchase.toString(),
-          ),
-        })),
+        items: orderItems,
       });
 
       if (dto.fulfillmentMethod === "delivery" && order.shipment) {

@@ -1,0 +1,20 @@
+.inventory-board {
+  &__card {
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+
+  &__col-image {
+    width: 120px;
+  }
+
+  &__preview-img {
+    width: 100%;
+    min-height: 100px;
+    object-fit: cover;
+  }
+}

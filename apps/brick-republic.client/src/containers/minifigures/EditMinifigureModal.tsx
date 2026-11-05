@@ -22,6 +22,7 @@ const getDefaultFormData = (): UpdateMinifigureDto => ({
   themeId: "",
   yearReleased: new Date().getFullYear(),
   retailPrice: 0,
+  usedRetailPrice: 0,
   stock: { newCondition: 0, usedCondition: 0 },
   accessories: [],
   tags: [],
@@ -47,6 +48,10 @@ export function EditMinifigureModal({
         themeId: minifigure.theme.id,
         yearReleased: minifigure.yearReleased,
         retailPrice: parseFloat(minifigure.pricing.retailPrice.toString()),
+        usedRetailPrice: parseFloat(
+          minifigure.pricing.usedRetailPrice?.toString() ??
+            minifigure.pricing.retailPrice.toString(),
+        ),
         stock: { ...minifigure.stock },
         accessories: minifigure.accessories ? [...minifigure.accessories] : [],
         tags: minifigure.tags ? [...minifigure.tags] : [],
@@ -81,7 +86,11 @@ export function EditMinifigureModal({
         ...prev,
         stock: { ...prev.stock, [stockKey]: Number(value) },
       }));
-    } else if (name === "yearReleased" || name === "retailPrice") {
+    } else if (
+      name === "yearReleased" ||
+      name === "retailPrice" ||
+      name === "usedRetailPrice"
+    ) {
       setFormData((prev) => ({ ...prev, [name]: Number(value) }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -145,15 +154,29 @@ export function EditMinifigureModal({
                 />
               </Form.Group>
             </Col>
-            <Col md={4}>
+            <Col md={6}>
               <Form.Group>
-                <Form.Label>Retail Price ($)</Form.Label>
+                <Form.Label>New Retail Price ($)</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   required
                   name="retailPrice"
                   value={formData.retailPrice}
+                  onChange={handleChange}
+                />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>Used Retail Price ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  name="usedRetailPrice"
+                  value={formData.usedRetailPrice}
                   onChange={handleChange}
                 />
               </Form.Group>

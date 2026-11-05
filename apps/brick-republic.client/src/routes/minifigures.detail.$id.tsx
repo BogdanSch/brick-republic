@@ -3,7 +3,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/contexts";
 import { baseAxios } from "@/requests";
-import { Row, Col, Button, Form, Spinner, Alert, Badge } from "react-bootstrap";
+import {
+  Row,
+  Col,
+  Button,
+  Form,
+  Spinner,
+  Alert,
+  Badge,
+  Container,
+} from "react-bootstrap";
 import type { MinifigureDto } from "shared/types/dtos";
 
 const fetchMinifigure = async (id: string): Promise<MinifigureDto> => {
@@ -39,6 +48,10 @@ export const Route = createFileRoute("/minifigures/detail/$id")({
         ? minifigure.stock.newCondition
         : minifigure.stock.usedCondition;
     const isOutOfStock = currentStock === 0;
+    const currentPrice =
+      condition === "new"
+        ? minifigure.pricing.retailPrice
+        : minifigure.pricing.usedRetailPrice;
 
     const handleAddToCart = () => {
       addToCart({
@@ -46,16 +59,22 @@ export const Route = createFileRoute("/minifigures/detail/$id")({
         name: minifigure.name,
         condition: condition,
         quantity: 1,
-        priceAtPurchase: minifigure.pricing.retailPrice,
+        priceAtPurchase: currentPrice,
       });
     };
 
     return (
       <section className="product-detail mt-4">
+        <Container>
+          <div className="product-detail__wrap">
         <Row className="gy-4">
           <Col md={6}>
             <div className="product-detail__image-wrapper bg-light rounded d-flex align-items-center justify-content-center p-5 border h-100">
-              <img  />
+              <img
+                src={minifigure.previewUrl}
+                alt={minifigure.name}
+                className="img-fluid"
+              />
             </div>
           </Col>
 
@@ -73,7 +92,7 @@ export const Route = createFileRoute("/minifigures/detail/$id")({
               </p>
 
               <h2 className="fs-1 fw-bold mb-4">
-                ${minifigure.pricing.retailPrice.toFixed(2)}
+                ${currentPrice.toFixed(2)}
               </h2>
 
               <Form className="mb-4">
@@ -132,6 +151,8 @@ export const Route = createFileRoute("/minifigures/detail/$id")({
             </div>
           </Col>
         </Row>
+          </div>
+        </Container>
       </section>
     );
   },
