@@ -1,6 +1,10 @@
-import { createRootRoute, Outlet, Link } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+} from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { useAuth, useCart } from "../contexts";
+import { useAuth, useCart, type AuthContextType } from "../contexts";
 import { Navbar, Nav, Container, Badge, Button } from "react-bootstrap";
 
 function Navigation() {
@@ -52,7 +56,11 @@ function Navigation() {
   );
 }
 
-export const Route = createRootRoute({
+export interface IRouterContext {
+  auth: AuthContextType;
+}
+
+export const Route = createRootRouteWithContext<IRouterContext>()({
   component: () => (
     <>
       <Navigation />

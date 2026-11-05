@@ -9,11 +9,12 @@ import { jwtDecode } from "jwt-decode";
 import type { TokenPayload } from "shared/types";
 import useLocalStorage from "../hooks/useLocalStorage";
 
-type AuthContextType = {
+export type AuthContextType = {
   token: string | null;
   user: TokenPayload | null;
   login: (token: string) => void;
   logout: () => void;
+  isAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,9 +43,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (newToken: string) => setToken(newToken);
   const logout = () => removeToken();
+  const isAdmin = Boolean(user && user?.role && user.role === "admin");
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ token, user, login, logout, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

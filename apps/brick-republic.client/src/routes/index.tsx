@@ -82,8 +82,7 @@ export const Route = createFileRoute("/")({
                             src={mf.previewUrl}
                             alt={mf.name}
                             className="catalog__item-image"
-                            style={{
-                            }}
+                            style={{}}
                           />
                         </Link>
                       )}

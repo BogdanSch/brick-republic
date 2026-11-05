@@ -47,6 +47,7 @@ export type MinifigureDto = {
   name: string;
   previewUrl: string;
   theme: {
+    id: string;
     slug: string;
     name: string;
   };

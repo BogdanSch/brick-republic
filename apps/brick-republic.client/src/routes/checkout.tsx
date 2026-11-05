@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useAuth, useCart } from "../contexts";
-import { baseAxios } from "../requests";
+import { baseAxios, protectedAxios } from "../requests";
 import { Card, Form, Button, Alert, Row, Col, Spinner } from "react-bootstrap";
 import type { CreateOrderDto, StoreDto } from "shared/types/dtos";
 
@@ -14,9 +14,9 @@ const fetchStores = async (): Promise<StoreDto[]> => {
 export const Route = createFileRoute("/checkout")({
   component: function () {
     const { user } = useAuth();
-    const navigate = useNavigate();
     const { items, itemsTotal, clearCart } = useCart();
-    const [errorMessage, setErrorMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState<string>("");
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState<CreateOrderDto>({
       fulfillmentMethod: "delivery",
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/checkout")({
 
     const checkoutMutation = useMutation({
       mutationFn: async (payload: CreateOrderDto) => {
-        const { data } = await baseAxios.post("/orders", payload);
+        const { data } = await protectedAxios.post("/orders", payload);
         return data;
       },
       onSuccess: () => {

@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { baseAxios } from "../requests";
+import { protectedAxios } from "../requests";
 import { Card, Spinner, Alert, Badge, Row, Col } from "react-bootstrap";
 import type { OrderDto } from "shared/types/dtos";
 import { getStatusBadgeVariant } from "../utils/statusHelper";
 
 const fetchMyOrders = async (): Promise<OrderDto[]> => {
-  const { data } = await baseAxios.get<{ items: OrderDto[] }>(
+  const { data } = await protectedAxios.get<{ items: OrderDto[] }>(
     "/orders/my-orders",
   );
   return data.items;

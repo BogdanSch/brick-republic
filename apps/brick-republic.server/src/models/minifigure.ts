@@ -63,6 +63,7 @@ MinifigureSchema.methods.toDto = function (): MinifigureDto {
     name: this.name,
     previewUrl: this.previewUrl,
     theme: {
+      id: this.theme.themeId.toString(),
       slug: this.theme.slug,
       name: this.theme.name,
     },
