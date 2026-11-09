@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { Minifigure, Order, Theme } from "../models/index.js";
 import type {
   CreateMinifigureDto,
+  MinifigureCollectionDto,
   UpdateMinifigureDto,
 } from "shared/types/index.js";
 
@@ -18,18 +19,46 @@ router.get("/", async (req: Request, res: Response) => {
     filters["theme.name"] = query.theme;
   }
   if (query.minPrice || query.maxPrice) {
-    filters["pricing.retailPrice"] = {};
+    const priceFilters: Record<string, number> = {};
     if (query.minPrice) {
-      filters["pricing.retailPrice"].$gte = Number(query.minPrice);
+      priceFilters.$gte = Number(query.minPrice);
     }
     if (query.maxPrice) {
-      filters["pricing.retailPrice"].$lte = Number(query.maxPrice);
+      priceFilters.$lte = Number(query.maxPrice);
     }
+
+    filters["$or"] = [
+      {
+        $and: [
+          { "pricing.retailPrice": priceFilters },
+          { "stock.newCondition": { $gt: 0 } },
+        ],
+      },
+      {
+        $and: [
+          { "pricing.usedRetailPrice": priceFilters },
+          { "stock.usedCondition": { $gt: 0 } },
+        ],
+      },
+    ];
   }
   const minifigures = await Minifigure.find(filters);
+  const result = await Minifigure.aggregate([
+    {
+      $group: {
+        _id: null,
+        minField: { $min: "$pricing.usedRetailPrice" },
+        maxField: { $max: "$pricing.retailPrice" },
+      },
+    },
+  ]);
 
   const minifiguresDto = await Promise.all(minifigures.map((mf) => mf.toDto()));
-  res.json({ items: minifiguresDto });
+  res.json({
+    items: minifiguresDto,
+    minPrice: Number(result[0].minField),
+    maxPrice: Number(result[0].maxField),
+  } as MinifigureCollectionDto);
 });
 
 router.get("/:id", async (req: Request, res: Response) => {

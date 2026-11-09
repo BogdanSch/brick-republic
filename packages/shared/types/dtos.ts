@@ -67,6 +67,12 @@ export type MinifigureDto = {
   tags?: string[];
 };
 
+export type MinifigureCollectionDto = {
+  items: MinifigureDto[];
+  maxPrice: number;
+  minPrice: number;
+};
+
 export type CreateMinifigureDto = {
   name: string;
   previewUrl: string;
@@ -159,18 +165,18 @@ export type OrderDto = {
     priceAtPurchase: number;
   }>;
   shipment?: {
-    carrier: string;
-    serviceLevel: string;
-    trackingNumber: string;
+    carrier?: string;
+    serviceLevel?: string;
+    trackingNumber?: string;
     shippingCost: number;
-    estimatedDeliveryDate: Date;
+    estimatedDeliveryDate?: Date;
     shippingAddress: BaseAddress;
   };
   pickup?: {
     storeId: string;
     name: string;
     storeAddress: BaseAddress;
-    expectedPickupDate: Date;
+    expectedPickupDate?: Date;
   };
   financials: {
     itemsTotal: number;
@@ -180,6 +186,7 @@ export type OrderDto = {
 };
 
 export type ItemInCartDto = {
+  minifigureName: string;
   minifigureId: string;
   condition: string;
   quantity: number;
@@ -189,8 +196,6 @@ export type CreateOrderDto = {
   fulfillmentMethod: "delivery" | "pickup";
   items: ItemInCartDto[];
   shipment?: {
-    carrier: string;
-    serviceLevel: string;
     shippingAddress: BaseAddress;
   };
   pickup?: {

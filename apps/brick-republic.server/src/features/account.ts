@@ -17,7 +17,7 @@ import mongoose from "mongoose";
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
-  const dto: RegisterUserDto = req.body;
+  const dto = req.body as RegisterUserDto;
 
   const existingUser = await User.findOne({ email: dto.email });
   if (existingUser) {
@@ -39,6 +39,7 @@ router.post("/register", async (req, res) => {
     });
     await user.save();
   } catch (error) {
+    console.error("Error registering user:", error);
     return res.status(500).json({
       message: "Error registering user",
     });

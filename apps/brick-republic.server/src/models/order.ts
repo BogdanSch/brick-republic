@@ -16,11 +16,11 @@ export type MinifigureOrder = {
 type OrderFulfillmentMethod = "delivery" | "pickup";
 
 type Shipment = {
-  carrier: string;
-  serviceLevel: string;
-  trackingNumber: string;
+  carrier?: string;
+  serviceLevel?: string;
+  trackingNumber?: string;
   shippingCost: mongoose.Types.Decimal128;
-  estimatedDeliveryDate: Date;
+  estimatedDeliveryDate?: Date;
   shippingAddress: BaseAddress;
 };
 
@@ -28,7 +28,7 @@ type Pickup = {
   storeId: mongoose.Types.ObjectId;
   name: string;
   storeAddress: BaseAddress;
-  expectedPickupDate: Date;
+  expectedPickupDate?: Date;
 };
 
 type Financials = {
@@ -70,16 +70,16 @@ const MinifigureOrderSchema = new Schema<MinifigureOrder>(
 
 const ShipmentSchema = new Schema<Shipment>(
   {
-    carrier: { type: String, required: true },
-    serviceLevel: { type: String, required: true },
-    trackingNumber: { type: String, required: true },
+    carrier: { type: String },
+    serviceLevel: { type: String },
+    trackingNumber: { type: String },
     shippingCost: {
       type: Schema.Types.Decimal128,
       required: true,
       min: 0,
       default: 0,
     },
-    estimatedDeliveryDate: { type: Date, required: true },
+    estimatedDeliveryDate: { type: Date },
     shippingAddress: { type: BaseAddressSchema, required: true },
   },
   { _id: false },
@@ -90,7 +90,7 @@ const PickupSchema = new Schema<Pickup>(
     storeId: { type: Schema.Types.ObjectId, required: true },
     name: { type: String, required: true },
     storeAddress: { type: BaseAddressSchema, required: true },
-    expectedPickupDate: { type: Date, required: true },
+    expectedPickupDate: { type: Date },
   },
   { _id: false },
 );

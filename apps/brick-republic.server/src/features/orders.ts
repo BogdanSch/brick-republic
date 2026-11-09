@@ -117,11 +117,11 @@ router.post(
           {
             $inc: { [conditionKey]: -item.quantity },
           },
-          { new: true },
+          { returnDocument: "after" },
         );
         if (!minifigure) {
           return res.status(409).json({
-            message: `Insufficient stock for ${item.minifigureId} (${item.condition} condition). Order cancelled.`,
+            message: `Insufficient stock for ${item.minifigureName} (${item.condition} condition). Order cancelled.`,
           });
         }
 
@@ -143,7 +143,25 @@ router.post(
       }
 
       let shippingTotal: number = 0;
-      if (dto.fulfillmentMethod === "pickup" && dto.pickup?.storeId) {
+      let shipment:
+        | {
+            shippingAddress: NonNullable<CreateOrderDto["shipment"]>["shippingAddress"];
+            shippingCost: mongoose.Types.Decimal128;
+          }
+        | undefined;
+      let pickup:
+        | {
+            storeId: mongoose.Types.ObjectId;
+            name: string;
+            storeAddress: InstanceType<typeof Store>["address"];
+          }
+        | undefined;
+
+      if (dto.fulfillmentMethod === "pickup") {
+        if (!dto.pickup?.storeId) {
+          return res.status(400).json({ message: "Select a pickup store." });
+        }
+
         const store = await Store.findById(dto.pickup.storeId);
         if (!store) {
           return res
@@ -151,17 +169,34 @@ router.post(
             .json({ message: "Selected pickup store not found." });
         }
 
-        dto.pickup.name = store.name;
-        dto.pickup.storeAddress = store.address;
+        pickup = {
+          storeId: store._id,
+          name: store.name,
+          storeAddress: store.address,
+        };
       } else if (dto.fulfillmentMethod === "delivery") {
+        if (!dto.shipment?.shippingAddress) {
+          return res
+            .status(400)
+            .json({ message: "Provide a delivery address." });
+        }
+
         shippingTotal = DELIVERY_TARRIF;
+        shipment = {
+          shippingAddress: dto.shipment.shippingAddress,
+          shippingCost: mongoose.Types.Decimal128.fromString(
+            shippingTotal.toString(),
+          ),
+        };
       }
       const finalTotal: number = itemsTotal + shippingTotal;
 
       const order = new Order({
-        ...dto,
         customerId: decodedToken.userId,
         status: "pending",
+        fulfillmentMethod: dto.fulfillmentMethod,
+        ...(shipment ? { shipment } : {}),
+        ...(pickup ? { pickup } : {}),
         financials: {
           itemsTotal: mongoose.Types.Decimal128.fromString(
             itemsTotal.toString(),
@@ -176,15 +211,10 @@ router.post(
         items: orderItems,
       });
 
-      if (dto.fulfillmentMethod === "delivery" && order.shipment) {
-        order.shipment.shippingCost = mongoose.Types.Decimal128.fromString(
-          shippingTotal.toString(),
-        );
-      }
-
       await order.save();
       res.status(201).json(order.toDto());
     } catch (e) {
+      console.error("Error creating order:", e);
       res.status(500).json({ message: "Error creating order" });
     }
   },

@@ -38,6 +38,7 @@ export const Route = createFileRoute("/checkout")({
     const [formData, setFormData] = useState<CreateOrderDto>({
       fulfillmentMethod: "delivery",
       items: items.map((item) => ({
+        minifigureName: item.name,
         minifigureId: item.minifigureId,
         condition: item.condition,
         quantity: item.quantity,
@@ -74,9 +75,6 @@ export const Route = createFileRoute("/checkout")({
           setFormData((prev) => ({
             ...prev,
             shipment: {
-              ...prev.shipment,
-              carrier: prev.shipment?.carrier ?? "",
-              serviceLevel: prev.shipment?.serviceLevel ?? "",
               shippingAddress: {
                 street: defaultAddress.street,
                 city: defaultAddress.city,
@@ -122,9 +120,6 @@ export const Route = createFileRoute("/checkout")({
         setFormData((prev) => ({
           ...prev,
           shipment: {
-            ...prev.shipment,
-            carrier: prev.shipment?.carrier ?? "",
-            serviceLevel: prev.shipment?.serviceLevel ?? "",
             shippingAddress: {
               street: "",
               city: "",
@@ -141,9 +136,6 @@ export const Route = createFileRoute("/checkout")({
           setFormData((prev) => ({
             ...prev,
             shipment: {
-              ...prev.shipment,
-              carrier: prev.shipment?.carrier ?? "",
-              serviceLevel: prev.shipment?.serviceLevel ?? "",
               shippingAddress: {
                 street: selectedAddress.street,
                 city: selectedAddress.city,
@@ -162,8 +154,6 @@ export const Route = createFileRoute("/checkout")({
       const { name, value } = event.target;
       setFormData((prev) => {
         const shipment = prev.shipment ?? {
-          carrier: "",
-          serviceLevel: "",
           shippingAddress: {
             street: "",
             city: "",
@@ -258,226 +248,239 @@ export const Route = createFileRoute("/checkout")({
       <section className="checkout-page mt-4">
         <Container>
           <div className="checkout-page__wrap">
-        <h1 className="mb-4">Checkout</h1>
-        {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
-        <Row className="gy-4">
-          <Col lg={8}>
-            <Card className="shadow-sm border-0 bg-light p-4">
-              <Form onSubmit={handleSubmit}>
-                <h3 className="fs-4 mb-4 pb-2 border-bottom">1. Fulfillment</h3>
-                <Form.Group className="mb-4 d-flex gap-4">
-                  <Form.Check
-                    type="radio"
-                    id="method-delivery"
-                    label="Delivery ($4.60)"
-                    checked={formData.fulfillmentMethod === "delivery"}
-                    onChange={() => handleMethodChange("delivery")}
-                  />
-                  <Form.Check
-                    type="radio"
-                    id="method-pickup"
-                    label="Store Pickup (Free)"
-                    checked={formData.fulfillmentMethod === "pickup"}
-                    onChange={() => handleMethodChange("pickup")}
-                  />
-                </Form.Group>
+            <h1 className="mb-4">Checkout</h1>
+            {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
+            <Row className="gy-4">
+              <Col lg={8}>
+                <Card className="shadow-sm border-0 bg-light p-4">
+                  <Form onSubmit={handleSubmit}>
+                    <h3 className="fs-4 mb-4 pb-2 border-bottom">
+                      1. Fulfillment
+                    </h3>
+                    <Form.Group className="mb-4 d-flex gap-4">
+                      <Form.Check
+                        type="radio"
+                        id="method-delivery"
+                        label="Delivery ($4.60)"
+                        checked={formData.fulfillmentMethod === "delivery"}
+                        onChange={() => handleMethodChange("delivery")}
+                      />
+                      <Form.Check
+                        type="radio"
+                        id="method-pickup"
+                        label="Store Pickup (Free)"
+                        checked={formData.fulfillmentMethod === "pickup"}
+                        onChange={() => handleMethodChange("pickup")}
+                      />
+                    </Form.Group>
 
-                <h3 className="fs-4 mb-4 pb-2 border-bottom">2. Details</h3>
+                    <h3 className="fs-4 mb-4 pb-2 border-bottom">2. Details</h3>
 
-                {formData.fulfillmentMethod === "delivery" && (
-                  <div className="checkout-page__address-form">
-                    {hasSavedAddresses && (
-                      <Form.Group className="mb-4">
-                        <Form.Label className="fw-medium">
-                          Select Delivery Address
-                        </Form.Label>
-                        <Form.Select
-                          value={selectedAddressId}
-                          onChange={handleAddressSelect}
-                        >
-                          {userProfile?.addresses?.map((addressElement) => (
-                            <option
-                              key={addressElement.id}
-                              value={addressElement.id}
+                    {formData.fulfillmentMethod === "delivery" && (
+                      <div className="checkout-page__address-form">
+                        {hasSavedAddresses && (
+                          <Form.Group className="mb-4">
+                            <Form.Label className="fw-medium">
+                              Select Delivery Address
+                            </Form.Label>
+                            <Form.Select
+                              value={selectedAddressId}
+                              onChange={handleAddressSelect}
                             >
-                              {addressElement.street}, {addressElement.city}
-                            </option>
-                          ))}
-                          <option value="new">+ Enter a new address...</option>
-                        </Form.Select>
-                      </Form.Group>
-                    )}
-
-                    {selectedAddressId === "new" ? (
-                      <>
-                        <Form.Group className="mb-3">
-                          <Form.Label className="fw-medium">
-                            Street Address
-                          </Form.Label>
-                          <Form.Control
-                            type="text"
-                            name="street"
-                            required
-                            value={formData.shipment?.shippingAddress.street}
-                            onChange={handleAddressChange}
-                          />
-                        </Form.Group>
-                        <Row>
-                          <Col md={5}>
-                            <Form.Group className="mb-3">
-                              <Form.Label className="fw-medium">
-                                City
-                              </Form.Label>
-                              <Form.Control
-                                type="text"
-                                name="city"
-                                required
-                                value={formData.shipment?.shippingAddress.city}
-                                onChange={handleAddressChange}
-                              />
-                            </Form.Group>
-                          </Col>
-                          <Col md={3}>
-                            <Form.Group className="mb-3">
-                              <Form.Label className="fw-medium">
-                                Postal Code
-                              </Form.Label>
-                              <Form.Control
-                                type="text"
-                                name="postalCode"
-                                required
-                                value={
-                                  formData.shipment?.shippingAddress.postalCode
-                                }
-                                onChange={handleAddressChange}
-                              />
-                            </Form.Group>
-                          </Col>
-                          <Col md={4}>
-                            <Form.Group className="mb-3">
-                              <Form.Label className="fw-medium">
-                                Country
-                              </Form.Label>
-                              <Form.Control
-                                type="text"
-                                name="country"
-                                required
-                                value={
-                                  formData.shipment?.shippingAddress.country
-                                }
-                                onChange={handleAddressChange}
-                              />
-                            </Form.Group>
-                          </Col>
-                        </Row>
-
-                        <div className="p-3 mt-3 bg-white border rounded">
-                          <Form.Group>
-                            <Form.Check
-                              type="checkbox"
-                              id="save-address-flag"
-                              label="Save this address to my profile and set as default"
-                              checked={saveNewAddress}
-                              onChange={(event) =>
-                                setSaveNewAddress(event.target.checked)
-                              }
-                            />
+                              {userProfile?.addresses?.map((addressElement) => (
+                                <option
+                                  key={addressElement.id}
+                                  value={addressElement.id}
+                                >
+                                  {addressElement.street}, {addressElement.city}
+                                </option>
+                              ))}
+                              <option value="new">
+                                + Enter a new address...
+                              </option>
+                            </Form.Select>
                           </Form.Group>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="p-3 bg-white border rounded">
-                        <p className="mb-1 text-muted small text-uppercase fw-bold">
-                          Shipping To:
-                        </p>
-                        <p className="mb-1 fw-medium fs-5">
-                          {formData.shipment?.shippingAddress.street}
-                        </p>
-                        <p className="mb-0">
-                          {formData.shipment?.shippingAddress.city},{" "}
-                          {formData.shipment?.shippingAddress.postalCode}
-                        </p>
-                        <p className="mb-0 text-muted">
-                          {formData.shipment?.shippingAddress.country}
-                        </p>
+                        )}
+
+                        {selectedAddressId === "new" ? (
+                          <>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-medium">
+                                Street Address
+                              </Form.Label>
+                              <Form.Control
+                                type="text"
+                                name="street"
+                                required
+                                value={
+                                  formData.shipment?.shippingAddress.street
+                                }
+                                onChange={handleAddressChange}
+                              />
+                            </Form.Group>
+                            <Row>
+                              <Col md={5}>
+                                <Form.Group className="mb-3">
+                                  <Form.Label className="fw-medium">
+                                    City
+                                  </Form.Label>
+                                  <Form.Control
+                                    type="text"
+                                    name="city"
+                                    required
+                                    value={
+                                      formData.shipment?.shippingAddress.city
+                                    }
+                                    onChange={handleAddressChange}
+                                  />
+                                </Form.Group>
+                              </Col>
+                              <Col md={3}>
+                                <Form.Group className="mb-3">
+                                  <Form.Label className="fw-medium">
+                                    Postal Code
+                                  </Form.Label>
+                                  <Form.Control
+                                    type="text"
+                                    name="postalCode"
+                                    required
+                                    value={
+                                      formData.shipment?.shippingAddress
+                                        .postalCode
+                                    }
+                                    onChange={handleAddressChange}
+                                  />
+                                </Form.Group>
+                              </Col>
+                              <Col md={4}>
+                                <Form.Group className="mb-3">
+                                  <Form.Label className="fw-medium">
+                                    Country
+                                  </Form.Label>
+                                  <Form.Control
+                                    type="text"
+                                    name="country"
+                                    required
+                                    value={
+                                      formData.shipment?.shippingAddress.country
+                                    }
+                                    onChange={handleAddressChange}
+                                  />
+                                </Form.Group>
+                              </Col>
+                            </Row>
+
+                            <div className="p-3 mt-3 bg-white border rounded">
+                              <Form.Group>
+                                <Form.Check
+                                  type="checkbox"
+                                  id="save-address-flag"
+                                  label="Save this address to my profile and set as default"
+                                  checked={saveNewAddress}
+                                  onChange={(event) =>
+                                    setSaveNewAddress(event.target.checked)
+                                  }
+                                />
+                              </Form.Group>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="p-3 bg-white border rounded">
+                            <p className="mb-1 text-muted small text-uppercase fw-bold">
+                              Shipping To:
+                            </p>
+                            <p className="mb-1 fw-medium fs-5">
+                              {formData.shipment?.shippingAddress.street}
+                            </p>
+                            <p className="mb-0">
+                              {formData.shipment?.shippingAddress.city},{" "}
+                              {formData.shipment?.shippingAddress.postalCode}
+                            </p>
+                            <p className="mb-0 text-muted">
+                              {formData.shipment?.shippingAddress.country}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
 
-                {formData.fulfillmentMethod === "pickup" && (
-                  <div className="checkout-page__store-selector">
-                    {isLoadingStores ? (
-                      <Spinner animation="border" size="sm" />
-                    ) : (
-                      <Form.Group className="mb-3">
-                        <Form.Label className="fw-medium">
-                          Select a Store
-                        </Form.Label>
-                        <Form.Select
-                          required
-                          value={formData.pickup?.storeId || ""}
-                          onChange={handleStoreChange}
-                        >
-                          <option value="" disabled>
-                            Choose a location...
-                          </option>
-                          {stores?.map((store) => (
-                            <option key={store.id} value={store.id}>
-                              {store.name} - {store.address.street},{" "}
-                              {store.address.city}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
+                    {formData.fulfillmentMethod === "pickup" && (
+                      <div className="checkout-page__store-selector">
+                        {isLoadingStores ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          <Form.Group className="mb-3">
+                            <Form.Label className="fw-medium">
+                              Select a Store
+                            </Form.Label>
+                            <Form.Select
+                              required
+                              value={formData.pickup?.storeId || ""}
+                              onChange={handleStoreChange}
+                            >
+                              <option value="" disabled>
+                                Choose a location...
+                              </option>
+                              {stores?.map((store) => (
+                                <option key={store.id} value={store.id}>
+                                  {store.name} - {store.address.street},{" "}
+                                  {store.address.city}
+                                </option>
+                              ))}
+                            </Form.Select>
+                          </Form.Group>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
 
-                <div className="mt-5 pt-4 border-top text-end">
-                  <Button
-                    variant="dark"
-                    size="lg"
-                    type="submit"
-                    className="fw-bold px-5"
-                    disabled={checkoutMutation.isPending}
-                  >
-                    {checkoutMutation.isPending
-                      ? "Processing..."
-                      : "Place Order"}
-                  </Button>
-                </div>
-              </Form>
-            </Card>
-          </Col>
-          <Col lg={4}>
-            <Card className="shadow-sm border-0 bg-light p-4">
-              <h3 className="fs-4 mb-4 pb-2 border-bottom">Order Summary</h3>
-              <div className="d-flex justify-content-between mb-2">
-                <span className="text-muted">Items Total:</span>
-                <span className="fw-semibold">${itemsTotal.toFixed(2)}</span>
-              </div>
-              <div className="d-flex justify-content-between mb-4 pb-3 border-bottom">
-                <span className="text-muted">Shipping:</span>
-                <span className="fw-semibold">
-                  {formData.fulfillmentMethod === "delivery"
-                    ? "$4.60"
-                    : "$0.00"}
-                </span>
-              </div>
-              <div className="d-flex justify-content-between fs-4 fw-bold">
-                <span>Total:</span>
-                <span>
-                  $
-                  {(
-                    itemsTotal +
-                    (formData.fulfillmentMethod === "delivery" ? 4.6 : 0)
-                  ).toFixed(2)}
-                </span>
-              </div>
-            </Card>
-          </Col>
-        </Row>
+                    <div className="mt-5 pt-4 border-top text-end">
+                      <Button
+                        variant="dark"
+                        size="lg"
+                        type="submit"
+                        className="fw-bold px-5"
+                        disabled={checkoutMutation.isPending}
+                      >
+                        {checkoutMutation.isPending
+                          ? "Processing..."
+                          : "Place Order"}
+                      </Button>
+                    </div>
+                  </Form>
+                </Card>
+              </Col>
+              <Col lg={4}>
+                <Card className="shadow-sm border-0 bg-light p-4">
+                  <h3 className="fs-4 mb-4 pb-2 border-bottom">
+                    Order Summary
+                  </h3>
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="text-muted">Items Total:</span>
+                    <span className="fw-semibold">
+                      ${itemsTotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="d-flex justify-content-between mb-4 pb-3 border-bottom">
+                    <span className="text-muted">Shipping:</span>
+                    <span className="fw-semibold">
+                      {formData.fulfillmentMethod === "delivery"
+                        ? "$4.60"
+                        : "$0.00"}
+                    </span>
+                  </div>
+                  <div className="d-flex justify-content-between fs-4 fw-bold">
+                    <span>Total:</span>
+                    <span>
+                      $
+                      {(
+                        itemsTotal +
+                        (formData.fulfillmentMethod === "delivery" ? 4.6 : 0)
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
           </div>
         </Container>
       </section>
