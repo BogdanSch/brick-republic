@@ -7,6 +7,7 @@ import type {
   UserDto,
   UserRole,
 } from "shared/types/index.js";
+import { baseAddressDefinition } from "./schemas/baseAddressSchema.js";
 
 type UserAddress = BaseAddress & {
   _id: mongoose.Types.ObjectId;
@@ -47,13 +48,9 @@ const AdminProfileSchema = new Schema(
   { _id: false },
 );
 
-// Inhertit from BaseAddressSchema to avoid duplication of address fields
-const UserAddressSchema = new Schema(
+export const UserAddressSchema = new Schema(
   {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    postalCode: { type: String, required: true },
-    country: { type: String, required: true },
+    ...baseAddressDefinition,
     isDefault: { type: Boolean, required: true, default: false },
   },
   { _id: true },

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import type { ThemeDto } from "../types/dtos.js";
+import type { ThemeDto } from "shared/types/dtos.js";
 
 export type Theme = {
   name: string;
