@@ -1,3 +1,5 @@
+import type { OrderStatus } from ".";
+
 export type BaseAddress = {
   street: string;
   city: string;
@@ -155,7 +157,7 @@ export type OrderDto = {
   customerEmail?: string;
   customerProfile?: UserProfile;
   orderDate: Date;
-  status: string;
+  status: OrderStatus;
   fulfillmentMethod: "delivery" | "pickup";
   items: Array<{
     minifigureId: string;
@@ -166,7 +168,6 @@ export type OrderDto = {
   }>;
   shipment?: {
     carrier?: string;
-    serviceLevel?: string;
     trackingNumber?: string;
     shippingCost: number;
     estimatedDeliveryDate?: Date;
@@ -202,5 +203,17 @@ export type CreateOrderDto = {
     storeId: string;
     name?: string;
     storeAddress?: BaseAddress;
+  };
+};
+
+export type PatchOrderDto = {
+  status: OrderStatus;
+  shipment?: {
+    carrier: string;
+    trackingNumber: string;
+    estimatedDeliveryDate: string;
+  };
+  pickup?: {
+    expectedPickupDate: string;
   };
 };

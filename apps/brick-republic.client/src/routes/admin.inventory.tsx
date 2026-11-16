@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { baseAxios, protectedAxios } from "@/requests";
+import { LoadingSpinner } from "@/components";
 import {
   Table,
   Button,
-  Spinner,
   Badge,
   Card,
   Row,
@@ -82,7 +82,7 @@ export const Route = createFileRoute("/admin/inventory")({
     };
 
     if (isLoadingThemes) {
-      return <Spinner animation="border" className="d-block mx-auto mt-5" />;
+      return <LoadingSpinner />;
     }
 
     const activeThemeData = themes?.find(
@@ -190,10 +190,7 @@ export const Route = createFileRoute("/admin/inventory")({
 
                 <div className="table-responsive shadow-sm bg-white rounded border">
                   {isLoadingMinifigures ? (
-                    <Spinner
-                      animation="border"
-                      className="d-block mx-auto my-4"
-                    />
+                    <LoadingSpinner className="d-block mx-auto my-4" />
                   ) : (
                     <Table hover className="align-middle mb-0">
                       <thead className="table-light border-bottom">

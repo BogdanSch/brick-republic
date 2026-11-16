@@ -3,12 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/contexts";
 import { baseAxios } from "@/requests";
+import { LoadingSpinner } from "@/components";
 import {
   Row,
   Col,
   Button,
   Form,
-  Spinner,
   Alert,
   Badge,
   Container,
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/minifigures/detail/$id")({
     });
 
     if (isLoading)
-      return <Spinner animation="border" className="d-block mx-auto mt-5" />;
+      return <LoadingSpinner />;
     if (error)
       return <Alert variant="danger">Error loading minifigure details.</Alert>;
     if (!minifigure)

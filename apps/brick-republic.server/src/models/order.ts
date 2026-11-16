@@ -1,9 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { BaseAddressSchema } from "./schemas/baseAddressSchema.js";
-import type { BaseAddress, OrderDto } from "shared/types/index.ts";
-
-export type OrderStatus =
-  "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+import type { BaseAddress, OrderDto, OrderStatus } from "shared/types/index.ts";
 
 export type MinifigureOrder = {
   minifigureId: mongoose.Types.ObjectId;
@@ -17,7 +14,6 @@ type OrderFulfillmentMethod = "delivery" | "pickup";
 
 type Shipment = {
   carrier?: string;
-  serviceLevel?: string;
   trackingNumber?: string;
   shippingCost: mongoose.Types.Decimal128;
   estimatedDeliveryDate?: Date;
@@ -71,7 +67,6 @@ const MinifigureOrderSchema = new Schema<MinifigureOrder>(
 const ShipmentSchema = new Schema<Shipment>(
   {
     carrier: { type: String },
-    serviceLevel: { type: String },
     trackingNumber: { type: String },
     shippingCost: {
       type: Schema.Types.Decimal128,

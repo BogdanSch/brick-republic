@@ -6,8 +6,13 @@ import {
   type AuthenticatedRequest,
 } from "../middleware/auth.js";
 import { Order, Minifigure, Store } from "@models/index.js";
-import type { MinifigureOrder, OrderStatus } from "@models/order.js";
-import type { CreateOrderDto, TokenPayload } from "shared/types/index.js";
+import type { MinifigureOrder } from "@models/order.js";
+import type {
+  CreateOrderDto,
+  OrderStatus,
+  PatchOrderDto,
+  TokenPayload,
+} from "shared/types/index.js";
 
 const DELIVERY_TARRIF: number = 4.6;
 const router = express.Router();
@@ -145,7 +150,9 @@ router.post(
       let shippingTotal: number = 0;
       let shipment:
         | {
-            shippingAddress: NonNullable<CreateOrderDto["shipment"]>["shippingAddress"];
+            shippingAddress: NonNullable<
+              CreateOrderDto["shipment"]
+            >["shippingAddress"];
             shippingCost: mongoose.Types.Decimal128;
           }
         | undefined;
@@ -221,41 +228,55 @@ router.post(
 );
 
 router.patch(
-  "/:id/status",
+  "/:id",
   authenticateToken,
   authorizeRoles("admin"),
   async (req: Request, res: Response) => {
     try {
-      const { status } = req.body;
+      const dto = req.body as PatchOrderDto;
+      const order = await Order.findById(req.params.id);
 
-      const validStatuses = [
-        "pending",
-        "processing",
-        "shipped",
-        "delivered",
-        "cancelled",
-      ];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: "Invalid status provided" });
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
       }
 
-      const order = await Order.updateOne(
-        {
-          _id: req.params.id,
-        },
-        {
-          $set: {
-            status: status,
-          },
-        },
-      );
-      if (order.modifiedCount != 1) {
-        return res.status(404).json({ message: "Order not updated" });
+      const updateFields: Record<string, any> = {
+        status: dto.status,
+      };
+
+      if (order.fulfillmentMethod === "delivery" && dto.shipment) {
+        if (dto.shipment.carrier !== undefined) {
+          updateFields["shipment.carrier"] = dto.shipment.carrier;
+        }
+        if (dto.shipment.trackingNumber !== undefined) {
+          updateFields["shipment.trackingNumber"] = dto.shipment.trackingNumber;
+        }
+        if (dto.shipment.estimatedDeliveryDate !== undefined) {
+          updateFields["shipment.estimatedDeliveryDate"] = new Date(
+            dto.shipment.estimatedDeliveryDate,
+          );
+        }
+      } else if (order.fulfillmentMethod === "pickup" && dto.pickup) {
+        if (
+          dto.pickup.expectedPickupDate !== undefined &&
+          dto.pickup.expectedPickupDate !== ""
+        ) {
+          updateFields["pickup.expectedPickupDate"] = new Date(
+            dto.pickup.expectedPickupDate,
+          );
+        }
       }
 
-      res.sendStatus(204);
+      if (Object.keys(updateFields).length === 0) {
+        return res
+          .status(400)
+          .json({ message: "No valid fields provided for update." });
+      }
+
+      await Order.updateOne({ _id: order._id }, { $set: updateFields });
+      return res.sendStatus(204);
     } catch (e) {
-      res.status(500).json({ message: "Error updating order status" });
+      return res.status(500).json({ message: "Error updating order" });
     }
   },
 );

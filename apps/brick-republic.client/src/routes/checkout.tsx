@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useAuth, useCart } from "@/contexts";
 import { baseAxios, protectedAxios } from "@/requests";
+import { LoadingSpinner } from "@/components";
 import {
   Card,
   Form,
@@ -10,7 +11,6 @@ import {
   Alert,
   Row,
   Col,
-  Spinner,
   Container,
 } from "react-bootstrap";
 import type { CreateOrderDto, StoreDto, UserDto } from "shared/types/dtos";
@@ -238,7 +238,7 @@ export const Route = createFileRoute("/checkout")({
     }
 
     if (isLoadingProfile) {
-      return <Spinner animation="border" className="d-block mx-auto mt-5" />;
+      return <LoadingSpinner />;
     }
 
     const hasSavedAddresses =
@@ -407,7 +407,10 @@ export const Route = createFileRoute("/checkout")({
                     {formData.fulfillmentMethod === "pickup" && (
                       <div className="checkout-page__store-selector">
                         {isLoadingStores ? (
-                          <Spinner animation="border" size="sm" />
+                          <LoadingSpinner
+                            size="sm"
+                            className="d-inline-block"
+                          />
                         ) : (
                           <Form.Group className="mb-3">
                             <Form.Label className="fw-medium">

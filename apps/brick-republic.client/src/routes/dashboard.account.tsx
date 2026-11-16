@@ -3,9 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts";
+import { LoadingSpinner } from "@/components";
 import {
   Card,
-  Spinner,
   Alert,
   Badge,
   Row,
@@ -120,7 +120,7 @@ export const Route = createFileRoute("/dashboard/account")({
     };
 
     if (isLoadingOrders || isLoadingProfile) {
-      return <Spinner animation="border" className="d-block mx-auto mt-5" />;
+      return <LoadingSpinner />;
     } else if (ordersError || profileError) {
       return (
         <Alert variant="danger">Failed to load dashboard resources.</Alert>

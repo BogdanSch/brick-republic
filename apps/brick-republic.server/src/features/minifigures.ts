@@ -222,38 +222,27 @@ router.patch(
           .json({ message: "Provide a valid positive percentage." });
       }
 
-      const multiplier = 1 + inflationPercentage / 100;
-
+      const multiplier: number = 1 + inflationPercentage / 100;
       const result = await Minifigure.updateMany(
         {},
         [
           {
             $set: {
               "pricing.retailPrice": {
-                $toDecimal: {
-                  $round: [
-                    {
-                      $multiply: [
-                        { $toDouble: "$pricing.retailPrice" },
-                        multiplier,
-                      ],
-                    },
-                    2,
-                  ],
-                },
+                $round: [
+                  {
+                    $multiply: ["$pricing.retailPrice", multiplier],
+                  },
+                  2,
+                ],
               },
               "pricing.usedRetailPrice": {
-                $toDecimal: {
-                  $round: [
-                    {
-                      $multiply: [
-                        { $toDouble: "$pricing.usedRetailPrice" },
-                        multiplier,
-                      ],
-                    },
-                    2,
-                  ],
-                },
+                $round: [
+                  {
+                    $multiply: ["$pricing.usedRetailPrice", multiplier],
+                  },
+                  2,
+                ],
               },
             },
           },

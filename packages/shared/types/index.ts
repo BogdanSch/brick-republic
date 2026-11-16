@@ -6,4 +6,7 @@ export type TokenPayload = {
   role: UserRole;
 };
 
+export type OrderStatus =
+  "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+
 export * from "./dtos";
