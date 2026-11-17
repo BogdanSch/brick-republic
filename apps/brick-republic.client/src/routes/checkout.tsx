@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, type SyntheticEvent, useRef } from "react";
 import { useAuth, useCart } from "@/contexts";
 import { baseAxios, protectedAxios } from "@/requests";
 import { LoadingSpinner } from "@/components";
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/checkout")({
     const navigate = useNavigate();
 
     const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
-    const [saveNewAddress, setSaveNewAddress] = useState<boolean>(false);
+    const [isNewAddressDefault, setSaveNewAddress] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<CreateOrderDto>({
       fulfillmentMethod: "delivery",
@@ -57,33 +57,39 @@ export const Route = createFileRoute("/checkout")({
       enabled: !!user,
     });
 
+    const queryClient = useQueryClient();
+    const hasInitializedAddress = useRef(false);
+
     useEffect(() => {
       if (
-        userProfile &&
-        userProfile.addresses &&
-        userProfile.addresses.length > 0
+        hasInitializedAddress.current ||
+        !userProfile?.addresses ||
+        userProfile.addresses.length === 0
       ) {
-        const defaultAddress =
-          userProfile.addresses.find(
-            (addressElement) => addressElement.isDefault,
-          ) || userProfile.addresses[0];
+        return;
+      }
 
-        const addressId = defaultAddress.id || "new";
-        setSelectedAddressId(addressId);
+      hasInitializedAddress.current = true;
+      const defaultAddress =
+        userProfile.addresses.find(
+          (addressElement) => addressElement.isDefault,
+        ) || userProfile.addresses[0];
 
-        if (addressId !== "new") {
-          setFormData((prev) => ({
-            ...prev,
-            shipment: {
-              shippingAddress: {
-                street: defaultAddress.street,
-                city: defaultAddress.city,
-                postalCode: defaultAddress.postalCode,
-                country: defaultAddress.country,
-              },
+      const addressId = defaultAddress.id || "new";
+      setSelectedAddressId(addressId);
+
+      if (addressId !== "new") {
+        setFormData((prev) => ({
+          ...prev,
+          shipment: {
+            shippingAddress: {
+              street: defaultAddress.street,
+              city: defaultAddress.city,
+              postalCode: defaultAddress.postalCode,
+              country: defaultAddress.country,
             },
-          }));
-        }
+          },
+        }));
       }
     }, [userProfile]);
 
@@ -185,7 +191,7 @@ export const Route = createFileRoute("/checkout")({
       }));
     };
 
-    const handleSubmit = async (event: React.FormEvent) => {
+    const handleSubmit = async (event: SyntheticEvent) => {
       event.preventDefault();
       setErrorMessage("");
 
@@ -196,16 +202,20 @@ export const Route = createFileRoute("/checkout")({
 
       if (
         formData.fulfillmentMethod === "delivery" &&
-        selectedAddressId === "new" &&
-        saveNewAddress
+        selectedAddressId === "new"
       ) {
         try {
           await protectedAxios.post("/account/me/addresses", {
             ...formData.shipment?.shippingAddress,
-            isDefault: true,
+            isDefault: isNewAddressDefault,
           });
+          await queryClient.invalidateQueries({ queryKey: ["userProfile"] });
         } catch (error: any) {
-          console.error("Failed to save address to profile", error);
+          setErrorMessage(
+            error.response?.data?.message ||
+              "Failed to save the new address to your profile.",
+          );
+          return;
         }
       }
 
@@ -375,8 +385,8 @@ export const Route = createFileRoute("/checkout")({
                                 <Form.Check
                                   type="checkbox"
                                   id="save-address-flag"
-                                  label="Save this address to my profile and set as default"
-                                  checked={saveNewAddress}
+                                  label="Set this address as default"
+                                  checked={isNewAddressDefault}
                                   onChange={(event) =>
                                     setSaveNewAddress(event.target.checked)
                                   }

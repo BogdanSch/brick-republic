@@ -1,4 +1,5 @@
 import axios from "axios";
+import { router } from "../main";
 
 export const protectedAxios = axios.create({
   baseURL: "http://localhost:3000/api",
@@ -21,6 +22,22 @@ protectedAxios.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  },
+);
+
+protectedAxios.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      router.navigate({
+        to: "/auth/login",
+        replace: true,
+      });
+    }
     return Promise.reject(error);
   },
 );

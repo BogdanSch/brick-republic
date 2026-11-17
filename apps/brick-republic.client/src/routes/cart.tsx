@@ -14,7 +14,6 @@ export const Route = createFileRoute("/cart")({
         </div>
       );
     }
-
     return (
       <section className="cart-page mt-5">
         <Container>
@@ -93,7 +92,7 @@ export const Route = createFileRoute("/cart")({
               <Button variant="outline-secondary" onClick={clearCart}>
                 Clear Cart
               </Button>
-              <Link to="/checkout" className="fw-medium px-4">
+              <Link to="/checkout" className="btn btn-success px-4">
                 Proceed to Checkout
               </Link>
             </div>

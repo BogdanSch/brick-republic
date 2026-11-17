@@ -145,129 +145,138 @@ export const Route = createFileRoute("/dashboard/account")({
                   </p>
                 ) : (
                   <div className="account-page__orders d-flex flex-column gap-4 mt-3">
-                    {orders?.map((order) => (
-                      <Card
-                        key={order.id}
-                        className="shadow-sm border-0 bg-light"
-                      >
-                        <Card.Header className="bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center">
-                          <div className="d-flex flex-column">
-                            <span className="text-muted small">
-                              Order ID: {order.id}
-                            </span>
-                            <span className="fw-medium">
-                              Date:{" "}
-                              {new Date(order.orderDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <Badge
-                            bg={getStatusBadgeVariant(order.status)}
-                            className="fs-6 text-capitalize"
-                          >
-                            {order.status}
-                          </Badge>
-                        </Card.Header>
-                        <Card.Body className="p-4">
-                          <Row className="gy-3">
-                            <Col md={8}>
-                              <h4 className="fs-6 text-muted mb-3 text-uppercase">
-                                Items
-                              </h4>
-                              <ul className="list-unstyled mb-0">
-                                {order.items.map((item, index) => (
-                                  <li
-                                    key={index}
-                                    className="mb-2 pb-2 border-bottom d-flex justify-content-between"
-                                  >
-                                    <span>
-                                      <span className="fw-semibold">
-                                        {item.quantity}x
-                                      </span>{" "}
-                                      {item.name}
-                                      <span className="text-muted small ms-2">
-                                        ({item.condition})
-                                      </span>
-                                    </span>
-                                    <span className="fw-medium">
-                                      $
-                                      {parseFloat(
-                                        item.priceAtPurchase.toString(),
-                                      ).toFixed(2)}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </Col>
-                            <Col
-                              md={4}
-                              className="border-start border-md-0 ps-md-4 mt-4 mt-md-0"
+                    {orders?.map((order) => {
+                      return (
+                        <Card
+                          key={order.id}
+                          className="shadow-sm border-0 bg-light"
+                        >
+                          <Card.Header className="bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center">
+                            <div className="d-flex flex-column">
+                              <span className="text-muted small">
+                                Order ID: {order.id}
+                              </span>
+                              <span className="fw-medium">
+                                Date:{" "}
+                                {new Date(order.orderDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <Badge
+                              bg={getStatusBadgeVariant(order.status)}
+                              className="fs-6 text-capitalize"
                             >
-                              <h4 className="fs-6 text-muted mb-3 text-uppercase">
-                                Summary
-                              </h4>
-                              <div className="d-flex justify-content-between mb-1 small">
-                                <span>Fulfillment:</span>
-                                <span className="text-capitalize fw-medium">
-                                  {order.fulfillmentMethod}
-                                </span>
-                              </div>
-                              <div className="mb-2 small">
-                                <span className="d-block text-muted">
-                                  {order.fulfillmentMethod === "delivery"
-                                    ? "Delivery address:"
-                                    : "Pickup location:"}
-                                </span>
-                                {order.shipment?.shippingAddress ? (
-                                  <address className="mb-0">
-                                    {order.shipment.shippingAddress.street}
-                                    <br />
-                                    {order.shipment.shippingAddress.city},{" "}
-                                    {order.shipment.shippingAddress.postalCode}
-                                    <br />
-                                    {order.shipment.shippingAddress.country}
-                                  </address>
-                                ) : order.pickup ? (
-                                  <address className="mb-0">
-                                    <span className="fw-medium">
-                                      {order.pickup.name}
-                                    </span>
-                                    <br />
-                                    {order.pickup.storeAddress.street}
-                                    <br />
-                                    {order.pickup.storeAddress.city},{" "}
-                                    {order.pickup.storeAddress.postalCode}
-                                    <br />
-                                    {order.pickup.storeAddress.country}
-                                  </address>
-                                ) : (
-                                  <span className="text-muted">
-                                    Address not available
+                              {order.status}
+                            </Badge>
+                          </Card.Header>
+                          <Card.Body className="p-4">
+                            <Row className="gy-3">
+                              <Col md={8}>
+                                <h4 className="fs-6 text-muted mb-3 text-uppercase">
+                                  Items
+                                </h4>
+                                <ul className="list-unstyled mb-0">
+                                  {order.items.map((item, index) => (
+                                    <li
+                                      key={index}
+                                      className="mb-2 pb-2 border-bottom d-flex justify-content-between"
+                                    >
+                                      <span>
+                                        <span className="fw-semibold">
+                                          {item.quantity}x
+                                        </span>{" "}
+                                        {item.name}
+                                        <span className="text-muted small ms-2">
+                                          ({item.condition})
+                                        </span>
+                                      </span>
+                                      <span className="fw-medium">
+                                        $
+                                        {parseFloat(
+                                          item.priceAtPurchase.toString(),
+                                        ).toFixed(2)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </Col>
+                              <Col
+                                md={4}
+                                className="border-start border-md-0 ps-md-4 mt-4 mt-md-0"
+                              >
+                                <h4 className="fs-6 text-muted mb-3 text-uppercase">
+                                  Summary
+                                </h4>
+                                <div className="d-flex justify-content-between mb-1 small">
+                                  <span>Fulfillment:</span>
+                                  <span className="text-capitalize fw-medium">
+                                    {order.fulfillmentMethod}
                                   </span>
-                                )}
-                              </div>
-                              <div className="d-flex justify-content-between mb-2 pb-2 border-bottom small">
-                                <span>Shipping:</span>
-                                <span>
-                                  $
-                                  {parseFloat(
-                                    order.financials.shippingTotal.toString(),
-                                  ).toFixed(2)}
-                                </span>
-                              </div>
-                              <div className="d-flex justify-content-between fw-bold fs-5">
-                                <span>Total:</span>
-                                <span>
-                                  $
-                                  {parseFloat(
-                                    order.financials.finalTotal.toString(),
-                                  ).toFixed(2)}
-                                </span>
-                              </div>
-                            </Col>
-                          </Row>
-                        </Card.Body>
-                      </Card>
-                    ))}
+                                </div>
+                                <div className="mb-2 small">
+                                  <span className="d-block text-muted">
+                                    {order.fulfillmentMethod === "delivery"
+                                      ? "Delivery address:"
+                                      : "Pickup location:"}
+                                  </span>
+                                  {order.fulfillmentMethod === "delivery" &&
+                                  order.shipment ? (
+                                    <address className="mb-0">
+                                      {order.shipment.shippingAddress.street}
+                                      <br />
+                                      {
+                                        order.shipment.shippingAddress.city
+                                      },{" "}
+                                      {
+                                        order.shipment.shippingAddress
+                                          .postalCode
+                                      }
+                                      <br />
+                                      {order.shipment.shippingAddress.country}
+                                    </address>
+                                  ) : order.fulfillmentMethod !== "delivery" &&
+                                    order.pickup ? (
+                                    <address className="mb-0">
+                                      <span className="fw-medium">
+                                        {order.pickup.name}
+                                      </span>
+                                      <br />
+                                      {order.pickup.storeAddress.street}
+                                      <br />
+                                      {order.pickup.storeAddress.city},{" "}
+                                      {order.pickup.storeAddress.postalCode}
+                                      <br />
+                                      {order.pickup.storeAddress.country}
+                                    </address>
+                                  ) : (
+                                    <span className="text-muted">
+                                      Address not available
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="d-flex justify-content-between mb-2 pb-2 border-bottom small">
+                                  <span>Shipping:</span>
+                                  <span>
+                                    $
+                                    {parseFloat(
+                                      order.financials.shippingTotal.toString(),
+                                    ).toFixed(2)}
+                                  </span>
+                                </div>
+                                <div className="d-flex justify-content-between fw-bold fs-5">
+                                  <span>Total:</span>
+                                  <span>
+                                    $
+                                    {parseFloat(
+                                      order.financials.finalTotal.toString(),
+                                    ).toFixed(2)}
+                                  </span>
+                                </div>
+                              </Col>
+                            </Row>
+                          </Card.Body>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </Tab>

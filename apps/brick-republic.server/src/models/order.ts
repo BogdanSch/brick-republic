@@ -129,11 +129,13 @@ OrderSchema.index({ orderDate: -1 });
 OrderSchema.methods.toDto = function (): OrderDto {
   const shipment = this.shipment
     ? {
-        ...this.shipment,
+        carrier: this.shipment.carrier,
+        trackingNumber: this.shipment.trackingNumber,
         shippingCost: parseFloat(this.shipment.shippingCost.toString()),
+        estimatedDeliveryDate: this.shipment.estimatedDeliveryDate,
+        shippingAddress: this.shipment.shippingAddress,
       }
     : undefined;
-
   const pickup = this.pickup
     ? {
         storeId: this.pickup.storeId.toString(),

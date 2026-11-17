@@ -6,7 +6,7 @@ import { AuthProvider, CartProvider, useAuth } from "./contexts";
 import { routeTree } from "./routeTree.gen";
 import "@/scss/main.scss";
 
-const router = createRouter({
+export const router = createRouter({
   routeTree,
   context: {
     auth: undefined!,

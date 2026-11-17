@@ -77,13 +77,14 @@ router.get(
 
       res.json({
         orders: orders.map((o) => {
-          const dto = o.toDto();
+          const dto = Order.hydrate(o).toDto();
           dto.customerEmail = o.customerEmail;
           dto.customerProfile = o.customerProfile;
           return dto;
         }),
       });
     } catch (e) {
+      console.error("Error fetching all orders: " + e);
       res.status(500).json({ message: "Error fetching all orders" });
     }
   },
@@ -276,6 +277,7 @@ router.patch(
       await Order.updateOne({ _id: order._id }, { $set: updateFields });
       return res.sendStatus(204);
     } catch (e) {
+      console.error("Error updating order: " + e);
       return res.status(500).json({ message: "Error updating order" });
     }
   },

@@ -212,23 +212,29 @@ router.delete(
   authenticateToken,
   async (request: AuthenticatedRequest, response: Response) => {
     try {
-      const user = await User.findById(request.user?.userId);
-      if (!user || !user.addresses) {
-        return response.status(404).json({ message: "User not found" });
-      }
+      const userId = request.user?.userId;
+      if (!userId)
+        return response.status(401).json({ message: "Unauthorized" });
 
-      const targetAddressId = request.params.addressId as string;
-      const targetAddress = user.addresses.find(
-        (address) => String(address._id) === targetAddressId,
+      const addressId = String(request.params.addressId);
+      if (!mongoose.Types.ObjectId.isValid(addressId))
+        return response.status(400).json({ message: "Invalid address ID" });
+
+      const result = await User.updateOne(
+        { _id: userId },
+        {
+          $pull: {
+            addresses: { _id: addressId },
+          },
+        },
       );
-      if (!targetAddress) {
-        return response.status(404).json({ message: "Address not found" });
+
+      if (result.modifiedCount === 0) {
+        return response
+          .status(404)
+          .json({ message: "User or address not found" });
       }
 
-      const targetAddressIndex: number = user.addresses.indexOf(targetAddress);
-      user.addresses.splice(targetAddressIndex, 1);
-
-      await user.save();
       return response.sendStatus(204);
     } catch (error) {
       return response.status(500).json({ message: "Failed to delete address" });
