@@ -213,7 +213,7 @@ export function EditMinifigureModal({
                   name={"accessories"}
                   items={formData.accessories || []}
                   setFormData={setFormData}
-                  label={"Accessories (Press Enter to add)"}
+                  label={"Accessories"}
                 />
               </Form.Group>
             </Col>
@@ -223,7 +223,7 @@ export function EditMinifigureModal({
                   name={"tags"}
                   items={formData.tags || []}
                   setFormData={setFormData}
-                  label={"Tags (Press Enter to add)"}
+                  label={"Tags"}
                 />
               </Form.Group>
             </Col>

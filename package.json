@@ -18,6 +18,7 @@
   ],
   "allowScripts": {
     "bcrypt": true,
-    "esbuild": true
+    "esbuild": true,
+    "@parcel/watcher@2.6.0": true
   }
 }

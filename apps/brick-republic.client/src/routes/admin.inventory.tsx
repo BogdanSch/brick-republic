@@ -84,18 +84,15 @@ export const Route = createFileRoute("/admin/inventory")({
     if (isLoadingThemes) {
       return <LoadingSpinner />;
     }
-
     const activeThemeData = themes?.find(
       (themeElement) => themeElement.id === activeThemeId,
     );
-
     return (
       <section className="inventory-board mt-4">
         <Container>
           <div className="inventory-board__wrap">
             <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
               <h1 className="mb-0">Theme Manager</h1>
-
               <div className="d-flex align-items-center gap-3">
                 <Form
                   onSubmit={handleInflationSubmit}
@@ -122,20 +119,18 @@ export const Route = createFileRoute("/admin/inventory")({
                       : "Apply Global Inflation"}
                   </Button>
                 </Form>
-
                 <Button variant="dark" onClick={() => setShowCreateTheme(true)}>
                   + Add Theme
                 </Button>
               </div>
             </div>
-
             <Row className="mb-5 gy-3">
               {themes?.map((theme) => (
                 <Col md={4} lg={3} key={theme.id}>
                   <Card
                     className={`h-100 shadow-sm inventory-board__card ${
                       activeThemeId === theme.id
-                        ? "border-dark border-2"
+                        ? "border-light border-2"
                         : "border-0 bg-light"
                     }`}
                     onClick={() => setActiveThemeId(theme.id)}
@@ -169,7 +164,6 @@ export const Route = createFileRoute("/admin/inventory")({
                 </Col>
               ))}
             </Row>
-
             {activeThemeId ? (
               <>
                 <div className="d-flex justify-content-between align-items-center mb-4 pt-4 border-top">
@@ -187,7 +181,6 @@ export const Route = createFileRoute("/admin/inventory")({
                     + Add Minifigure
                   </Button>
                 </div>
-
                 <div className="table-responsive shadow-sm bg-white rounded border">
                   {isLoadingMinifigures ? (
                     <LoadingSpinner className="d-block mx-auto my-4" />
@@ -285,7 +278,6 @@ export const Route = createFileRoute("/admin/inventory")({
                 </h3>
               </div>
             )}
-
             <CreateThemeModal
               show={showCreateTheme}
               onHide={() => setShowCreateTheme(false)}
@@ -298,7 +290,8 @@ export const Route = createFileRoute("/admin/inventory")({
             <CreateMinifigureModal
               show={showCreateMinifigure}
               onHide={() => setShowCreateMinifigure(false)}
-              themes={themes || []}
+              themeId={activeThemeId ?? ""}
+              themeName={activeThemeData?.name ?? ""}
             />
             <EditMinifigureModal
               show={!!editMinifigure}

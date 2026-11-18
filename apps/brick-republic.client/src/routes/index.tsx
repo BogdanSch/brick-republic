@@ -9,7 +9,15 @@ import {
   type PriceRange,
 } from "@/components";
 import { baseAxios } from "@/requests";
-import { Card, Button, Alert, Badge, Container } from "react-bootstrap";
+import {
+  Card,
+  Button,
+  Alert,
+  Badge,
+  Container,
+  Form,
+  InputGroup,
+} from "react-bootstrap";
 import type { MinifigureCollectionDto, ThemeDto } from "shared/types/dtos";
 import "@/scss/templates/catalog.scss";
 
@@ -20,13 +28,17 @@ const fetchThemes = async (): Promise<ThemeDto[]> => {
 
 const fetchMinifigures = async (
   priceRange: PriceRange | null,
+  search: string,
 ): Promise<MinifigureCollectionDto> => {
   const { data } = await baseAxios.get<MinifigureCollectionDto>(
     "/minifigures",
     {
-      params: priceRange
-        ? { minPrice: priceRange.min, maxPrice: priceRange.max }
-        : undefined,
+      params: {
+        ...(priceRange
+          ? { minPrice: priceRange.min, maxPrice: priceRange.max }
+          : {}),
+        searchQuery: search,
+      },
     },
   );
   return data;
@@ -37,6 +49,8 @@ export const Route = createFileRoute("/")({
     const { addToCart } = useCart();
     const [catalogMax, setCatalogMax] = useState<number | null>(null);
     const [sliderRange, setSliderRange] = useState<PriceRange | null>(null);
+    const [searchInput, setSearchInput] = useState("");
+    const [search, setSearch] = useState("");
     const [committedRange, setCommittedRange] = useState<PriceRange | null>(
       null,
     );
@@ -56,8 +70,8 @@ export const Route = createFileRoute("/")({
       isFetching: isFetchingCatalog,
       error: errorCatalog,
     } = useQuery({
-      queryKey: ["minifigures", committedRange],
-      queryFn: () => fetchMinifigures(committedRange),
+      queryKey: ["minifigures", committedRange, search],
+      queryFn: () => fetchMinifigures(committedRange, search),
       placeholderData: keepPreviousData,
     });
 
@@ -72,18 +86,39 @@ export const Route = createFileRoute("/")({
     if (isLoadingThemes || (isLoadingCatalog && !minifiguresCollection)) {
       return <LoadingSpinner />;
     }
-
     if (errorThemes || errorCatalog) {
       return <Alert variant="danger">Error loading catalog data.</Alert>;
     }
-
     const sliderMax = catalogMax ?? 0;
-
     return (
       <section className="catalog">
         <Container>
           <div className="catalog__wrapper">
             <h1 className="mt-5 mb-4">Minifigure Catalog</h1>
+            <div className="row justify-content-center mb-1">
+              <div className="col-12 col-md-8 col-lg-6">
+                <Form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    setSearch(searchInput);
+                  }}
+                >
+                  <InputGroup>
+                    <Form.Control
+                      name="searchQuery"
+                      type="search"
+                      aria-label="Search minifigures"
+                      placeholder="Search minifigures..."
+                      value={searchInput}
+                      onChange={(event) => setSearchInput(event.target.value)}
+                    />
+                    <Button type="submit" variant="dark" aria-label="Search">
+                      <i className="bi bi-search-heart" aria-hidden="true" />
+                    </Button>
+                  </InputGroup>
+                </Form>
+              </div>
+            </div>
             <div className="mb-5">
               <PriceRangeSlider
                 min={0}

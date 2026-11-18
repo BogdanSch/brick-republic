@@ -3,18 +3,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal, Button, Form, Row, Col, Alert } from "react-bootstrap";
 import { CollectionInput } from "@/components";
 import { protectedAxios } from "@/requests";
-import type { CreateMinifigureDto, ThemeDto } from "shared/types/dtos";
+import type { CreateMinifigureDto } from "shared/types/dtos";
 
 type CreateMinifigureModalProps = {
   show: boolean;
   onHide: () => void;
-  themes: ThemeDto[];
+  themeId: string;
+  themeName: string;
 };
 
-const getDefaultFormData = (): CreateMinifigureDto => ({
+const getDefaultFormData = (themeId: string): CreateMinifigureDto => ({
   name: "",
   previewUrl: "",
-  themeId: "",
+  themeId,
   yearReleased: new Date().getFullYear(),
   retailPrice: 0,
   usedRetailPrice: 0,
@@ -26,22 +27,24 @@ const getDefaultFormData = (): CreateMinifigureDto => ({
 export function CreateMinifigureModal({
   show,
   onHide,
-  themes,
+  themeId,
+  themeName,
 }: CreateMinifigureModalProps) {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const [formData, setFormData] =
-    useState<CreateMinifigureDto>(getDefaultFormData());
+  const [formData, setFormData] = useState<CreateMinifigureDto>(() =>
+    getDefaultFormData(themeId),
+  );
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      await protectedAxios.post("/minifigures", formData);
+      await protectedAxios.post("/minifigures", { ...formData, themeId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["minifigures"] });
       onHide();
-      setFormData(getDefaultFormData());
+      setFormData(getDefaultFormData(themeId));
     },
     onError: (error: any) => {
       setErrorMessage(
@@ -87,7 +90,6 @@ export function CreateMinifigureModal({
         </Modal.Header>
         <Modal.Body>
           {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
-
           <Row className="gy-3">
             <Col md={6}>
               <Form.Group>
@@ -103,20 +105,8 @@ export function CreateMinifigureModal({
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Theme</Form.Label>
-                <Form.Select
-                  required
-                  name="themeId"
-                  value={formData.themeId}
-                  onChange={handleChange}
-                >
-                  <option value="" disabled>
-                    Select Theme...
-                  </option>
-                  {themes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
+                <Form.Select value={themeId} disabled>
+                  <option value={themeId}>{themeName}</option>
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -190,7 +180,7 @@ export function CreateMinifigureModal({
                   name={"accessories"}
                   items={formData.accessories || []}
                   setFormData={setFormData}
-                  label={"Accessories (Press Enter to add)"}
+                  label={"Accessories"}
                 />
               </Form.Group>
             </Col>
@@ -200,7 +190,7 @@ export function CreateMinifigureModal({
                   name={"tags"}
                   items={formData.tags || []}
                   setFormData={setFormData}
-                  label={"Tags (Press Enter to add)"}
+                  label={"Tags"}
                 />
               </Form.Group>
             </Col>

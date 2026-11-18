@@ -4,6 +4,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, CartProvider, useAuth } from "./contexts";
 import { routeTree } from "./routeTree.gen";
+import "bootstrap-icons/font/bootstrap-icons.css";
 import "@/scss/main.scss";
 
 export const router = createRouter({

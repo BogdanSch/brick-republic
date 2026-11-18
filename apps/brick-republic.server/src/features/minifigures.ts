@@ -11,54 +11,101 @@ import type {
 
 const router = express.Router();
 
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 router.get("/", async (req: Request, res: Response) => {
-  const query = req.query as QueryParams;
+  try {
+    const query = req.query as QueryParams;
 
-  const filters: Record<string, any> = {};
-  if (query.theme) {
-    filters["theme.name"] = query.theme;
-  }
-  if (query.minPrice || query.maxPrice) {
-    const priceFilters: Record<string, number> = {};
-    if (query.minPrice) {
-      priceFilters.$gte = Number(query.minPrice);
+    const filters: Record<string, any> = {};
+    if (query.theme) {
+      filters["theme.name"] = query.theme;
     }
-    if (query.maxPrice) {
-      priceFilters.$lte = Number(query.maxPrice);
+    if (query.themeId) {
+      filters["theme.themeId"] = new mongoose.Types.ObjectId(query.themeId);
     }
+    const andFilters: Record<string, any>[] = [];
+    if (query.minPrice || query.maxPrice) {
+      const priceFilters: Record<string, number> = {};
+      if (query.minPrice) {
+        priceFilters.$gte = Number(query.minPrice);
+      }
+      if (query.maxPrice) {
+        priceFilters.$lte = Number(query.maxPrice);
+      }
+      andFilters.push({
+        $or: [
+          {
+            $and: [
+              { "pricing.retailPrice": priceFilters },
+              { "stock.newCondition": { $gt: 0 } },
+            ],
+          },
+          {
+            $and: [
+              { "pricing.usedRetailPrice": priceFilters },
+              { "stock.usedCondition": { $gt: 0 } },
+            ],
+          },
+        ],
+      });
+    }
+    if (query.searchQuery && query.searchQuery.length > 0) {
+      const searchRegex = new RegExp(escapeRegex(query.searchQuery), "i");
+      andFilters.push({
+        $or: [
+          { name: searchRegex },
+          {
+            $and: [
+              {
+                tags: {
+                  $exists: true,
+                },
+              },
+              { tags: searchRegex },
+            ],
+          },
+          {
+            $and: [
+              {
+                accessories: {
+                  $exists: true,
+                },
+              },
+              { accessories: searchRegex },
+            ],
+          },
+        ],
+      });
+    }
+    if (andFilters.length > 0) filters["$and"] = andFilters;
 
-    filters["$or"] = [
+    const minifigures = await Minifigure.find(filters);
+    const result = await Minifigure.aggregate([
       {
-        $and: [
-          { "pricing.retailPrice": priceFilters },
-          { "stock.newCondition": { $gt: 0 } },
-        ],
+        $group: {
+          _id: null,
+          minField: { $min: "$pricing.usedRetailPrice" },
+          maxField: { $max: "$pricing.retailPrice" },
+        },
       },
-      {
-        $and: [
-          { "pricing.usedRetailPrice": priceFilters },
-          { "stock.usedCondition": { $gt: 0 } },
-        ],
-      },
-    ];
+    ]);
+
+    const minifiguresDto = await Promise.all(
+      minifigures.map((mf) => mf.toDto()),
+    );
+    res.json({
+      items: minifiguresDto,
+      minPrice: Number(result[0].minField),
+      maxPrice: Number(result[0].maxField),
+    } as MinifigureCollectionDto);
+  } catch (e) {
+    return res.status(500).json({
+      message: "Error fetching minifigures",
+    });
   }
-  const minifigures = await Minifigure.find(filters);
-  const result = await Minifigure.aggregate([
-    {
-      $group: {
-        _id: null,
-        minField: { $min: "$pricing.usedRetailPrice" },
-        maxField: { $max: "$pricing.retailPrice" },
-      },
-    },
-  ]);
-
-  const minifiguresDto = await Promise.all(minifigures.map((mf) => mf.toDto()));
-  res.json({
-    items: minifiguresDto,
-    minPrice: Number(result[0].minField),
-    maxPrice: Number(result[0].maxField),
-  } as MinifigureCollectionDto);
 });
 
 router.get("/:id", async (req: Request, res: Response) => {
