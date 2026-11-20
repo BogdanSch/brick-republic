@@ -9,6 +9,7 @@ import { Order, Minifigure, Store } from "@models/index.js";
 import type { MinifigureOrder } from "@models/order.js";
 import type {
   CreateOrderDto,
+  OrderDto,
   OrderStatus,
   PatchOrderDto,
   TokenPayload,
@@ -16,6 +17,16 @@ import type {
 
 const DELIVERY_TARRIF: number = 4.6;
 const router = express.Router();
+
+class OrderRequestError extends Error {
+  constructor(
+    readonly statusCode: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "OrderRequestError";
+  }
+}
 
 router.get(
   "/my-orders",
@@ -94,136 +105,162 @@ router.post(
   "/",
   authenticateToken,
   async (req: AuthenticatedRequest, res: Response) => {
+    let session: mongoose.ClientSession | undefined;
+
     try {
-      const dto = req.body as CreateOrderDto;
-      const decodedToken = req.user as TokenPayload;
+      const transactionSession = await mongoose.startSession();
+      session = transactionSession;
+      const createdOrder: OrderDto = await transactionSession.withTransaction(
+        async () => {
+          const dto = req.body as CreateOrderDto;
+          const decodedToken = req.user as TokenPayload;
 
-      let itemsTotal: number = 0;
-      const orderItems: MinifigureOrder[] = [];
+          let itemsTotal: number = 0;
+          const orderItems: MinifigureOrder[] = [];
 
-      for (const item of dto.items) {
-        if (item.condition !== "new" && item.condition !== "used") {
-          return res.status(400).json({ message: "Invalid item condition." });
-        }
-        if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
-          return res.status(400).json({ message: "Invalid item quantity." });
-        }
-        const conditionKey: string =
-          item.condition === "new"
-            ? "stock.newCondition"
-            : "stock.usedCondition";
+          for (const item of dto.items) {
+            if (item.condition !== "new" && item.condition !== "used") {
+              throw new OrderRequestError(400, "Invalid item condition.");
+            }
+            if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+              throw new OrderRequestError(400, "Invalid item quantity.");
+            }
+            const conditionKey: string =
+              item.condition === "new"
+                ? "stock.newCondition"
+                : "stock.usedCondition";
 
-        const minifigure = await Minifigure.findOneAndUpdate(
-          {
-            _id: item.minifigureId,
-            [conditionKey]: {
-              $gte: item.quantity,
+            const minifigure = await Minifigure.findOneAndUpdate(
+              {
+                _id: item.minifigureId,
+                [conditionKey]: {
+                  $gte: item.quantity,
+                },
+              },
+              {
+                $inc: { [conditionKey]: -item.quantity },
+              },
+              { returnDocument: "after", session: transactionSession },
+            );
+            if (!minifigure) {
+              throw new OrderRequestError(
+                409,
+                `Insufficient stock for ${item.minifigureName} (${item.condition} condition). Order cancelled.`,
+              );
+            }
+
+            const unitPrice: mongoose.Types.Decimal128 =
+              item.condition === "new"
+                ? minifigure.pricing.retailPrice
+                : minifigure.pricing.usedRetailPrice;
+
+            itemsTotal += Number(unitPrice.toString()) * item.quantity;
+            orderItems.push({
+              minifigureId: minifigure._id,
+              name: minifigure.name,
+              condition: item.condition,
+              quantity: item.quantity,
+              priceAtPurchase: mongoose.Types.Decimal128.fromString(
+                unitPrice.toString(),
+              ),
+            });
+          }
+
+          let shippingTotal: number = 0;
+          let shipment:
+            | {
+                shippingAddress: NonNullable<
+                  CreateOrderDto["shipment"]
+                >["shippingAddress"];
+                shippingCost: mongoose.Types.Decimal128;
+              }
+            | undefined;
+          let pickup:
+            | {
+                storeId: mongoose.Types.ObjectId;
+                name: string;
+                storeAddress: InstanceType<typeof Store>["address"];
+              }
+            | undefined;
+
+          switch (dto.fulfillmentMethod) {
+            case "pickup": {
+              if (!dto.pickup?.storeId) {
+                throw new OrderRequestError(400, "Select a pickup store.");
+              }
+
+              const store = await Store.findById(dto.pickup.storeId).session(
+                transactionSession,
+              );
+              if (!store) {
+                throw new OrderRequestError(
+                  404,
+                  "Selected pickup store not found.",
+                );
+              }
+
+              pickup = {
+                storeId: store._id,
+                name: store.name,
+                storeAddress: store.address,
+              };
+              break;
+            }
+            case "delivery": {
+              if (!dto.shipment?.shippingAddress) {
+                throw new OrderRequestError(400, "Provide a delivery address.");
+              }
+
+              shippingTotal = DELIVERY_TARRIF;
+              shipment = {
+                shippingAddress: dto.shipment.shippingAddress,
+                shippingCost: mongoose.Types.Decimal128.fromString(
+                  shippingTotal.toString(),
+                ),
+              };
+              break;
+            }
+            default:
+              throw new OrderRequestError(400, "Invalid fulfillment method.");
+          }
+          const finalTotal: number = itemsTotal + shippingTotal;
+
+          const order = new Order({
+            customerId: decodedToken.userId,
+            status: "pending",
+            fulfillmentMethod: dto.fulfillmentMethod,
+            ...(shipment ? { shipment } : {}),
+            ...(pickup ? { pickup } : {}),
+            financials: {
+              itemsTotal: mongoose.Types.Decimal128.fromString(
+                itemsTotal.toString(),
+              ),
+              shippingTotal: mongoose.Types.Decimal128.fromString(
+                shippingTotal.toString(),
+              ),
+              finalTotal: mongoose.Types.Decimal128.fromString(
+                finalTotal.toString(),
+              ),
             },
-          },
-          {
-            $inc: { [conditionKey]: -item.quantity },
-          },
-          { returnDocument: "after" },
-        );
-        if (!minifigure) {
-          return res.status(409).json({
-            message: `Insufficient stock for ${item.minifigureName} (${item.condition} condition). Order cancelled.`,
+            items: orderItems,
           });
-        }
 
-        const unitPrice: mongoose.Types.Decimal128 =
-          item.condition === "new"
-            ? minifigure.pricing.retailPrice
-            : minifigure.pricing.usedRetailPrice;
-
-        itemsTotal += Number(unitPrice.toString()) * item.quantity;
-        orderItems.push({
-          minifigureId: minifigure._id,
-          name: minifigure.name,
-          condition: item.condition,
-          quantity: item.quantity,
-          priceAtPurchase: mongoose.Types.Decimal128.fromString(
-            unitPrice.toString(),
-          ),
-        });
-      }
-
-      let shippingTotal: number = 0;
-      let shipment:
-        | {
-            shippingAddress: NonNullable<
-              CreateOrderDto["shipment"]
-            >["shippingAddress"];
-            shippingCost: mongoose.Types.Decimal128;
-          }
-        | undefined;
-      let pickup:
-        | {
-            storeId: mongoose.Types.ObjectId;
-            name: string;
-            storeAddress: InstanceType<typeof Store>["address"];
-          }
-        | undefined;
-
-      if (dto.fulfillmentMethod === "pickup") {
-        if (!dto.pickup?.storeId) {
-          return res.status(400).json({ message: "Select a pickup store." });
-        }
-
-        const store = await Store.findById(dto.pickup.storeId);
-        if (!store) {
-          return res
-            .status(404)
-            .json({ message: "Selected pickup store not found." });
-        }
-
-        pickup = {
-          storeId: store._id,
-          name: store.name,
-          storeAddress: store.address,
-        };
-      } else if (dto.fulfillmentMethod === "delivery") {
-        if (!dto.shipment?.shippingAddress) {
-          return res
-            .status(400)
-            .json({ message: "Provide a delivery address." });
-        }
-
-        shippingTotal = DELIVERY_TARRIF;
-        shipment = {
-          shippingAddress: dto.shipment.shippingAddress,
-          shippingCost: mongoose.Types.Decimal128.fromString(
-            shippingTotal.toString(),
-          ),
-        };
-      }
-      const finalTotal: number = itemsTotal + shippingTotal;
-
-      const order = new Order({
-        customerId: decodedToken.userId,
-        status: "pending",
-        fulfillmentMethod: dto.fulfillmentMethod,
-        ...(shipment ? { shipment } : {}),
-        ...(pickup ? { pickup } : {}),
-        financials: {
-          itemsTotal: mongoose.Types.Decimal128.fromString(
-            itemsTotal.toString(),
-          ),
-          shippingTotal: mongoose.Types.Decimal128.fromString(
-            shippingTotal.toString(),
-          ),
-          finalTotal: mongoose.Types.Decimal128.fromString(
-            finalTotal.toString(),
-          ),
+          await order.save({ session: transactionSession });
+          return order.toDto();
         },
-        items: orderItems,
-      });
-
-      await order.save();
-      res.status(201).json(order.toDto());
+      );
+      return res.status(201).json(createdOrder);
     } catch (e) {
+      if (e instanceof OrderRequestError) {
+        return res.status(e.statusCode).json({ message: e.message });
+      }
+
       console.error("Error creating order:", e);
-      res.status(500).json({ message: "Error creating order" });
+      return res.status(500).json({ message: "Error creating order" });
+    } finally {
+      if (session) {
+        await session.endSession();
+      }
     }
   },
 );
@@ -267,7 +304,6 @@ router.patch(
           );
         }
       }
-
       if (Object.keys(updateFields).length === 0) {
         return res
           .status(400)

@@ -1,4 +1,11 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { jwtDecode } from "jwt-decode";
 import type { TokenPayload } from "shared/types";
 import useLocalStorage from "../hooks/useLocalStorage";
@@ -6,6 +13,7 @@ import useLocalStorage from "../hooks/useLocalStorage";
 export type AuthContextType = {
   token: string | null;
   user: TokenPayload | null;
+  sessionExpired: boolean;
   login: (token: string) => void;
   logout: () => void;
   isAdmin: boolean;
@@ -13,11 +21,14 @@ export type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const AUTH_LOGOUT_EVENT = "auth:logout";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken, removeToken] = useLocalStorage<string | null>(
     "token",
     null,
   );
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const user = useMemo<TokenPayload | null>(() => {
     if (!token) return null;
@@ -29,12 +40,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token, removeToken]);
 
-  const login = (newToken: string) => setToken(newToken);
+  const login = (newToken: string) => {
+    setSessionExpired(false);
+    setToken(newToken);
+  };
   const logout = () => removeToken();
   const isAdmin = Boolean(user && user?.role && user.role === "admin");
 
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      logout();
+      setSessionExpired(true);
+    };
+
+    window.addEventListener(AUTH_LOGOUT_EVENT, handleAuthLogout);
+    return () => window.removeEventListener(AUTH_LOGOUT_EVENT, handleAuthLogout);
+  }, [logout]);
+
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, isAdmin }}>
+    <AuthContext.Provider
+      value={{ token, user, sessionExpired, login, logout, isAdmin }}
+    >
       {children}
     </AuthContext.Provider>
   );

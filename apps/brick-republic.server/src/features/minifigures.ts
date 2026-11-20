@@ -57,6 +57,7 @@ router.get("/", async (req: Request, res: Response) => {
       andFilters.push({
         $or: [
           { name: searchRegex },
+          { "theme.name": searchRegex },
           {
             $and: [
               {

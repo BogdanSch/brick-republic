@@ -23,7 +23,7 @@ app.use(
   }),
 );
 
-mongoose.connect(process.env.MONGO_URI!).then(() => {
+mongoose.connect(process.env.MONGO_URI!, { retryWrites: false }).then(() => {
   console.log("Connected to MongoDB");
 });
 

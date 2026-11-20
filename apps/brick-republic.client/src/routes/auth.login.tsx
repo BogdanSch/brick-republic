@@ -18,7 +18,7 @@ import type { LoginUserDto } from "shared/types/dtos";
 export const Route = createFileRoute("/auth/login")({
   component: function LoginPage() {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, sessionExpired } = useAuth();
 
     const [formData, setFormData] = useState<LoginUserDto>({
       email: "",
@@ -60,6 +60,11 @@ export const Route = createFileRoute("/auth/login")({
               <Card className="shadow-sm border-0">
                 <Card.Body className="p-5">
                   <h2 className="text-center mb-4 fs-2">Sign In</h2>
+                  {sessionExpired && (
+                    <Alert variant="warning">
+                      Your session has expired. Please sign in again.
+                    </Alert>
+                  )}
                   {authError && <Alert variant="danger">{authError}</Alert>}
                   <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3" controlId="email">

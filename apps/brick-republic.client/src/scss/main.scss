@@ -7,6 +7,7 @@
 }
 
 body {
+  font-family: $regular-font-family;
   background-color: $light-blue !important;
 }
 
@@ -14,7 +15,7 @@ header {
   position: sticky;
   inset: 0;
   z-index: 1000;
-  background-color: $light-gray;
+  background-color: $light;
 }
 
 h1,
@@ -30,7 +31,6 @@ h6 {
 p,
 label,
 input {
-  font-family: $regular-font-family;
   font-weight: $fw-normal;
 }
 
